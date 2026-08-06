@@ -1,5 +1,34 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Mini-MaxKB learning path
+
+### L0: replaceable chat models
+
+L0 keeps the UI unchanged and introduces a small provider layer inspired by
+MaxKB. The command-line chat uses one normalized message format while the
+Gemini and DeepSeek adapters translate it to their own HTTP APIs.
+
+1. Copy `.env.example` to `.env.local`.
+2. Set `AI_PROVIDER` and the matching API key and model.
+3. Start the chat:
+
+```bash
+pnpm chat:l0
+```
+
+You can override the active provider and model without changing source code:
+
+```bash
+pnpm chat:l0 -- --provider deepseek --model deepseek-v4-flash
+pnpm chat:l0 -- --provider gemini --model gemini-3.5-flash
+```
+
+Run the offline provider contract tests with:
+
+```bash
+pnpm test:l0
+```
+
 ## Getting Started
 
 First, run the development server:
