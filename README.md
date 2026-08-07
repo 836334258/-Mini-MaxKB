@@ -82,6 +82,31 @@ Run the offline RAG orchestration tests with:
 pnpm test:l2
 ```
 
+### L3: Web knowledge base
+
+L3 adds a Next.js Web workspace, Route Handlers, an NDJSON streaming response,
+and local SQLite persistence for conversations, messages, and source snapshots.
+API keys stay in server-side environment variables and are never returned by
+the settings endpoint.
+
+Prepare the vector index and start the app:
+
+```bash
+pnpm l1:index -- --chunk-size 600 --overlap 80
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). A new conversation can
+choose Gemini or DeepSeek; once its first message is sent, that conversation
+keeps the selected model. The default database is stored at
+`.mini-maxkb/mini-maxkb.sqlite` and remains outside Git.
+
+Run the SQLite persistence test with:
+
+```bash
+pnpm test:l3
+```
+
 ## Getting Started
 
 First, run the development server:

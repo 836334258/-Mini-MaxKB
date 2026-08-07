@@ -15,9 +15,11 @@
     "l1:search": "tsx scripts/l1-search.ts",
     "test:l1": "tsx --test tests/knowledge/semantic-search.test.ts",
     "l2:ask": "tsx scripts/l2-rag.ts",
-    "test:l2": "tsx --test tests/rag/rag-service.test.ts"
+    "test:l2": "tsx --test tests/rag/rag-service.test.ts",
+    "test:l3": "tsx --test tests/db/conversation-repository.test.ts"
   },
   "dependencies": {
+    "better-sqlite3": "12.9.0",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@next/env": "^16.3.0",
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "9.6.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

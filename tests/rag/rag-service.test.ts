@@ -65,7 +65,14 @@ test("RAG 先检索最相关分段，再要求聊天模型引用该来源", asyn
 
   const result = await askKnowledgeBase(
     { chatProvider, embeddingProvider, index },
-    { question: "如何切换模型？", topK: 1 },
+    {
+      question: "如何切换模型？",
+      topK: 1,
+      history: [
+        { role: "user", content: "我们正在讨论模型管理。" },
+        { role: "assistant", content: "好的，请继续提问。" },
+      ],
+    },
   );
 
   assert.equal(result.response.content, "修改配置即可切换聊天模型。[1]");
@@ -75,9 +82,11 @@ test("RAG 先检索最相关分段，再要求聊天模型引用该来源", asyn
   );
   assert.equal(capturedChatRequest?.temperature, 0.2);
   assert.match(capturedChatRequest?.messages[0].content ?? "", /只能根据/);
-  assert.match(capturedChatRequest?.messages[1].content ?? "", /\[1\]/);
-  assert.match(capturedChatRequest?.messages[1].content ?? "", /模型管理/);
-  assert.doesNotMatch(capturedChatRequest?.messages[1].content ?? "", /密钥只能/);
+  assert.equal(capturedChatRequest?.messages[1].content, "我们正在讨论模型管理。");
+  assert.equal(capturedChatRequest?.messages[2].content, "好的，请继续提问。");
+  assert.match(capturedChatRequest?.messages[3].content ?? "", /\[1\]/);
+  assert.match(capturedChatRequest?.messages[3].content ?? "", /模型管理/);
+  assert.doesNotMatch(capturedChatRequest?.messages[3].content ?? "", /密钥只能/);
 });
 
 test("空问题不会调用模型", async () => {

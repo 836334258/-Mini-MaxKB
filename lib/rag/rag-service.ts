@@ -17,6 +17,7 @@ interface AskKnowledgeBaseOptions {
   question: string;
   topK?: number;
   systemPrompt?: string;
+  history?: ChatMessage[];
 }
 
 export interface RagAnswer {
@@ -44,6 +45,7 @@ export function buildRagMessages(
   question: string,
   results: SearchResult[],
   customSystemPrompt?: string,
+  history: ChatMessage[] = [],
 ): ChatMessage[] {
   const ragInstruction = [
     customSystemPrompt?.trim(),
@@ -61,6 +63,7 @@ export function buildRagMessages(
   ]);
   return [
     { role: "system", content: ragInstruction },
+    ...history.filter((message) => message.role !== "system"),
     {
       role: "user",
       content: `知识库资料：\n\n${formatKnowledgeContext(results)}\n\n问题：${question}`,
@@ -103,6 +106,7 @@ export async function askKnowledgeBase(
       question,
       sources,
       options.systemPrompt,
+      options.history,
     ),
     temperature: 0.2,
   });
