@@ -57,6 +57,31 @@ Custom document folders can contain `.md` and `.txt` files:
 pnpm l1:index -- --input C:\path\to\documents
 ```
 
+### L2: command-line RAG
+
+L2 combines the L1 vector index with the replaceable L0 chat provider. It
+retrieves the most relevant document chunks, sends numbered context to the
+model, and prints both the answer and its retrieved sources:
+
+```bash
+pnpm l1:index -- --chunk-size 600 --overlap 80
+pnpm l2:ask -- --query "更换向量模型后要做什么"
+```
+
+The chat provider and model can still be replaced without changing source
+code:
+
+```bash
+pnpm l2:ask -- --query "如何保护 API Key" --provider deepseek --model deepseek-v4-flash
+pnpm l2:ask -- --query "如何保护 API Key" --provider gemini --model gemini-3.5-flash
+```
+
+Run the offline RAG orchestration tests with:
+
+```bash
+pnpm test:l2
+```
+
 ## Getting Started
 
 First, run the development server:

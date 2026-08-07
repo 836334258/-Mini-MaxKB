@@ -13,7 +13,9 @@
     "test:l0": "tsx --test tests/ai/providers.test.ts",
     "l1:index": "tsx scripts/l1-index.ts",
     "l1:search": "tsx scripts/l1-search.ts",
-    "test:l1": "tsx --test tests/knowledge/semantic-search.test.ts"
+    "test:l1": "tsx --test tests/knowledge/semantic-search.test.ts",
+    "l2:ask": "tsx scripts/l2-rag.ts",
+    "test:l2": "tsx --test tests/rag/rag-service.test.ts"
   },
   "dependencies": {
     "next": "16.3.0",
