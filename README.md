@@ -29,6 +29,34 @@ Run the offline provider contract tests with:
 pnpm test:l0
 ```
 
+After configuring real API keys, verify a two-turn conversation with:
+
+```bash
+pnpm smoke:l0 -- --provider deepseek
+pnpm smoke:l0 -- --provider gemini
+```
+
+### L1: document semantic search
+
+L1 configures the embedding model separately from the chat model. Build a local
+JSON vector index from the sample Markdown documents:
+
+```bash
+pnpm l1:index
+```
+
+Then search by meaning rather than exact keywords:
+
+```bash
+pnpm l1:search -- --query "更换向量模型后要做什么"
+```
+
+Custom document folders can contain `.md` and `.txt` files:
+
+```bash
+pnpm l1:index -- --input C:\path\to\documents
+```
+
 ## Getting Started
 
 First, run the development server:

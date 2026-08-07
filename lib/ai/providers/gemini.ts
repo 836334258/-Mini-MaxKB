@@ -78,6 +78,15 @@ export class GeminiChatProvider implements ChatProvider {
     let response: Response;
 
     try {
+      console.dir("request111", JSON.stringify({
+        contents: toGeminiContents(request.messages),
+        ...(systemInstruction
+            ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+            : {}),
+        ...(Object.keys(generationConfig).length > 0
+            ? { generationConfig }
+            : {}),
+      }));
       response = await this.fetcher(
         `${this.baseUrl}/models/${encodeURIComponent(this.model)}:generateContent`,
         {
@@ -116,7 +125,8 @@ export class GeminiChatProvider implements ChatProvider {
 
     try {
       body = (await response.json()) as GeminiResponse;
-      console.log('body',body)
+      console.log("body");
+      console.dir(body, { depth: null, colors: true });
     } catch {
       throw new ChatProviderError(
         this.id,

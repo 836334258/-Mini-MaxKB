@@ -31,5 +31,14 @@ export async function getProviderErrorMessage(response: Response) {
 }
 
 export function getNetworkErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const cause = error.cause;
+  if (cause instanceof Error) {
+    return `${error.message} (${cause.message})`;
+  }
+
+  return error.message;
 }

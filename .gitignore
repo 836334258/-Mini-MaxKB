@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# local Mini-MaxKB indexes
+/.mini-maxkb/
+
 # vercel
 .vercel
 

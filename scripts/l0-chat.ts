@@ -3,6 +3,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
 import { readChatProviderConfig } from "../lib/ai/config";
+import { configureAiNetworkFromEnv } from "../lib/ai/network";
 import { ChatProviderError } from "../lib/ai/provider-error";
 import { createChatProvider } from "../lib/ai/provider-registry";
 import type { ChatMessage } from "../lib/ai/types";
@@ -75,6 +76,7 @@ function printHelp() {
 
 async function main() {
   loadEnvConfig(process.cwd());
+  configureAiNetworkFromEnv();
   const options = parseOptions(process.argv.slice(2));
 
   if (options.help) {

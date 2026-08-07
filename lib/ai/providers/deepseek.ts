@@ -50,7 +50,17 @@ export class DeepSeekChatProvider implements ChatProvider {
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     let response: Response;
-
+    console.dir('request',JSON.stringify({
+      model: this.model,
+      messages: request.messages,
+      stream: false,
+      ...(request.temperature === undefined
+          ? {}
+          : { temperature: request.temperature }),
+      ...(request.maxOutputTokens === undefined
+          ? {}
+          : { max_tokens: request.maxOutputTokens }),
+    }))
     try {
       response = await this.fetcher(`${this.baseUrl}/chat/completions`, {
         method: "POST",
@@ -97,7 +107,8 @@ export class DeepSeekChatProvider implements ChatProvider {
       );
     }
     const choice = body.choices?.[0];
-    console.log('body',body)
+    console.log("body");
+    console.dir(body, { depth: null, colors: true });
     const content = choice?.message?.content?.trim();
 
     if (!content) {

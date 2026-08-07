@@ -9,12 +9,17 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "chat:l0": "tsx scripts/l0-chat.ts",
-    "test:l0": "tsx --test tests/ai/providers.test.ts"
+    "smoke:l0": "tsx scripts/l0-smoke.ts",
+    "test:l0": "tsx --test tests/ai/providers.test.ts",
+    "l1:index": "tsx scripts/l1-index.ts",
+    "l1:search": "tsx scripts/l1-search.ts",
+    "test:l1": "tsx --test tests/knowledge/semantic-search.test.ts"
   },
   "dependencies": {
     "next": "16.3.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "undici": "^7.29.0"
   },
   "devDependencies": {
     "@next/env": "^16.3.0",
