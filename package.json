@@ -30,7 +30,9 @@
     "langchain:lc1b": "tsx scripts/lc1b-model-config.ts",
     "test:langchain:lc1b": "tsx --test tests/langchain/model-config.test.ts",
     "langchain:lc1c": "tsx scripts/lc1c-memory.ts",
-    "test:langchain:lc1c": "tsx --test tests/langchain/memory-agent.test.ts"
+    "test:langchain:lc1c": "tsx --test tests/langchain/memory-agent.test.ts",
+    "langchain:lc1d": "tsx scripts/lc1d-streaming.ts",
+    "test:langchain:lc1d": "tsx --test tests/langchain/streaming-agent.test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.2.5",

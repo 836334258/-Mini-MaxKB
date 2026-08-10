@@ -134,6 +134,39 @@ process restarts. A production MaxKB-style application should use a database
 checkpointer and map an authenticated conversation ID to `thread_id`; that
 persistent step is reserved for LC6 so this lesson stays focused.
 
+### LangChain LC1D: typed event streaming
+
+LC1D replaces the one-shot `invoke()` view with streaming. The current
+`streamEvents` v3 API exposes independent typed projections that can be
+consumed at the same time:
+
+- `run.messages` streams incremental model text;
+- `run.toolCalls` exposes each tool's name, input, status, output, and error;
+- `run.output` resolves to the final complete Agent state.
+
+Run the deterministic event-stream test and the real Gemini demonstration:
+
+```bash
+pnpm test:langchain:lc1d
+pnpm langchain:lc1d
+pnpm langchain:lc1d -- "北京今天的天气怎么样？"
+```
+
+The lesson continues to use LC0's fixed weather data. That guarantees a clear
+model → tool → model sequence without mixing external weather API behavior into
+the streaming concept.
+
+The v3 projection API is recommended for new LangChain applications but is
+still marked experimental in the installed version. Keep the stream adapter
+isolated from UI code so a future API adjustment remains a local change.
+
+There is one verified compatibility exception in the currently installed
+`@langchain/google-genai@2.2.0`: Gemini v3 function-call events omit the call
+ID, so the tool result cannot be correlated with that event. LC1D therefore
+uses the supported `streamMode: ["updates", "messages"]` path for
+`google-genai`, which correctly generates the ID and completes the
+model → tool → model loop. Other configured providers use v3 projections.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by
