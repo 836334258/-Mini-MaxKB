@@ -24,7 +24,9 @@
     "eval:l4": "tsx scripts/l4-evaluate.ts",
     "test:l5a": "tsx --test tests/db/conversation-repository.test.ts tests/db/knowledge-base-repository.test.ts",
     "langchain:lc0": "tsx scripts/lc0-quickstart.ts",
-    "test:langchain:lc0": "tsx --test tests/langchain/quickstart.test.ts"
+    "test:langchain:lc0": "tsx --test tests/langchain/quickstart.test.ts",
+    "langchain:lc1": "tsx scripts/lc1-research.ts",
+    "test:langchain:lc1": "tsx --test tests/langchain/research-agent.test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.2.5",

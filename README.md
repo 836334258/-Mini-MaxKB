@@ -35,6 +35,38 @@ pnpm langchain:lc0 -- "北京今天需要带伞吗？"
 The script prints the complete agent state. The expected message sequence is
 user message, model tool call, tool result, and final model answer.
 
+### LangChain LC1A: system prompt and external text tool
+
+LC1A begins the Quickstart's real-world research agent in two small steps. It
+adds an actionable `systemPrompt` and a `fetch_text_from_url` tool. The tool
+uses Node.js `fetch`, `AbortController`, and Zod like the official example,
+while adding boundaries suitable for a server application:
+
+- only public HTTPS text on `www.gutenberg.org` is allowed;
+- redirects are rejected instead of silently leaving the allowlisted host;
+- requests stop after 20 seconds;
+- at most 20,000 characters are returned;
+- the result explicitly says whether it is complete or truncated.
+
+Run its offline security and truncation tests:
+
+```bash
+pnpm test:langchain:lc1
+```
+
+Run the real Agent with the built-in *Alice's Adventures in Wonderland*
+question, or provide another Gutenberg URL and question:
+
+```bash
+pnpm langchain:lc1
+pnpm langchain:lc1 -- "请读取 https://www.gutenberg.org/cache/epub/11/pg11.txt 并概括工具返回的片段"
+```
+
+The complete printed state should again contain four stages: user message,
+model tool call, external text tool result, and grounded final answer. This
+lesson does not add conversational memory yet; that is the next independent
+concept.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by
