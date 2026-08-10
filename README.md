@@ -109,6 +109,31 @@ Use a DeepSeek model that supports tool calling. Provider model availability
 can change, so the model name remains configuration rather than a hard-coded
 Agent concern.
 
+### LangChain LC1C: short-term conversation memory
+
+LC1C adds a `MemorySaver` checkpointer to an Agent and supplies a `thread_id`
+with every invocation. The two pieces have different jobs:
+
+- `MemorySaver` stores Agent state in the current Node.js process;
+- `thread_id` selects which conversation state to read and update;
+- reusing one ID continues a conversation, while different IDs stay isolated.
+
+Run the deterministic offline isolation test and the real three-turn example:
+
+```bash
+pnpm test:langchain:lc1c
+pnpm langchain:lc1c
+```
+
+The real example writes a TypeScript preference into thread A, recalls it in a
+second turn on thread A, and asks the same question in a new thread B. Thread B
+must say it does not know because it cannot read thread A's history.
+
+`MemorySaver` is intentionally temporary: all threads disappear when the
+process restarts. A production MaxKB-style application should use a database
+checkpointer and map an authenticated conversation ID to `thread_id`; that
+persistent step is reserved for LC6 so this lesson stays focused.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

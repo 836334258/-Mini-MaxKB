@@ -28,13 +28,16 @@
     "langchain:lc1": "tsx scripts/lc1-research.ts",
     "test:langchain:lc1": "tsx --test tests/langchain/research-agent.test.ts",
     "langchain:lc1b": "tsx scripts/lc1b-model-config.ts",
-    "test:langchain:lc1b": "tsx --test tests/langchain/model-config.test.ts"
+    "test:langchain:lc1b": "tsx --test tests/langchain/model-config.test.ts",
+    "langchain:lc1c": "tsx scripts/lc1c-memory.ts",
+    "test:langchain:lc1c": "tsx --test tests/langchain/memory-agent.test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.2.5",
     "@langchain/deepseek": "1.1.6",
     "@langchain/google": "0.2.1",
     "@langchain/google-genai": "2.2.0",
+    "@langchain/langgraph": "1.4.9",
     "better-sqlite3": "12.11.1",
     "deepagents": "1.12.2",
     "langchain": "1.5.5",

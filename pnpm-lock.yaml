@@ -20,6 +20,9 @@ importers:
       '@langchain/google-genai':
         specifier: 2.2.0
         version: 2.2.0(@langchain/core@1.2.5(openai@6.49.0(zod@4.4.3)))
+      '@langchain/langgraph':
+        specifier: 1.4.9
+        version: 1.4.9(@langchain/core@1.2.5(openai@6.49.0(zod@4.4.3)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.4.3)
       better-sqlite3:
         specifier: 12.11.1
         version: 12.11.1
