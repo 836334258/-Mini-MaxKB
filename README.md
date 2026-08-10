@@ -2,6 +2,39 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Mini-MaxKB learning path
 
+### LangChain LC0: current official quickstart
+
+LC0 follows the current JavaScript Quickstart and builds the smallest useful
+agent with `createAgent`, a Zod-validated weather tool, and Gemini. It requires
+Node.js 22 or newer. The weather result is intentionally fixed test data so the
+lesson can focus on observing the tool-calling loop.
+
+The Quickstart page currently shows `gemini-2.5-flash-lite`, but Google returns
+HTTP 404 for new users because that model is no longer available to them. This
+lesson therefore keeps the same official agent structure and uses the available
+`gemini-3.5-flash` model.
+
+The official Google integration reads `GOOGLE_API_KEY`. To preserve the
+project's existing configuration, the lesson script reuses `GEMINI_API_KEY`
+inside the server process when `GOOGLE_API_KEY` is absent. It never prints or
+writes the key.
+
+Run the offline tool contract test:
+
+```bash
+pnpm test:langchain:lc0
+```
+
+Run the real agent with the default question or provide your own:
+
+```bash
+pnpm langchain:lc0
+pnpm langchain:lc0 -- "北京今天需要带伞吗？"
+```
+
+The script prints the complete agent state. The expected message sequence is
+user message, model tool call, tool result, and final model answer.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by
