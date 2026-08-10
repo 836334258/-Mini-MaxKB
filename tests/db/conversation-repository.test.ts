@@ -11,6 +11,7 @@ test("SQLite 保存会话、消息和 RAG 来源快照", () => {
       title: "如何切换模型",
       provider: "deepseek",
       model: "deepseek-test",
+      knowledgeBaseId: "product-manual",
     });
     repository.addMessage({
       conversationId: conversation.id,
@@ -35,6 +36,7 @@ test("SQLite 保存会话、消息和 RAG 来源快照", () => {
 
     const stored = repository.getConversation(conversation.id);
     assert.equal(stored?.provider, "deepseek");
+    assert.equal(stored?.knowledgeBaseId, "product-manual");
     assert.deepEqual(
       stored?.messages.map((message) => message.role),
       ["user", "assistant"],

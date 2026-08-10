@@ -10,6 +10,7 @@ import {
 } from "../../../lib/chat-stream/types";
 import type { MessageSource } from "../../../lib/conversations/types";
 import { getConversationRepository } from "../../../lib/db/conversation-repository";
+import { getKnowledgeBaseRepository } from "../../../lib/db/knowledge-base-repository";
 import {
   assertIndexCompatible,
   loadVectorIndex,
@@ -24,6 +25,7 @@ interface ChatBody {
   message?: string;
   provider?: ChatProviderId;
   model?: string;
+  knowledgeBaseId?: string;
 }
 
 const encoder = new TextEncoder();
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
   try {
     configureAiNetworkFromEnv();
     const repository = getConversationRepository();
+    const knowledgeBaseRepository = getKnowledgeBaseRepository();
     const existingConversation = body.conversationId
       ? repository.getConversation(body.conversationId)
       : undefined;
@@ -93,16 +96,21 @@ export async function POST(request: Request) {
       return Response.json({ error: "会话不存在" }, { status: 404 });
     }
 
+    const knowledgeBaseId =
+      existingConversation?.knowledgeBaseId ?? body.knowledgeBaseId ?? "default";
+    const knowledgeBase =
+      knowledgeBaseRepository.getKnowledgeBaseRecord(knowledgeBaseId);
+    if (!knowledgeBase) {
+      return Response.json({ error: "知识库不存在" }, { status: 404 });
+    }
+
     const chatConfig = readChatProviderConfig({
       provider: existingConversation?.provider ?? body.provider,
       model: existingConversation?.model ?? body.model,
     });
     const embeddingConfig = readEmbeddingProviderConfig();
     const retrievalConfig = readRetrievalConfig();
-    const vectorIndex = await loadVectorIndex(
-      process.env.MINI_MAXKB_INDEX_PATH?.trim() ||
-        ".mini-maxkb/l1-index.json",
-    );
+    const vectorIndex = await loadVectorIndex(knowledgeBase.indexPath);
     assertIndexCompatible(vectorIndex, embeddingConfig);
 
     const chatProvider = createChatProvider(chatConfig);
@@ -113,6 +121,7 @@ export async function POST(request: Request) {
         title: question,
         provider: chatProvider.id,
         model: chatProvider.model,
+        knowledgeBaseId: knowledgeBase.id,
       });
     const history = existingConversation?.messages.map(({ role, content }) => ({
       role,
@@ -130,7 +139,7 @@ export async function POST(request: Request) {
           enqueueEvent(controller, { type: "conversation", conversation });
           enqueueEvent(controller, {
             type: "status",
-            message: "正在检索知识库并生成答案…",
+            message: `正在检索「${knowledgeBase.name}」并生成答案…`,
           });
 
           const result = await askKnowledgeBase(

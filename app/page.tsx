@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import type { ChatProviderId } from "../lib/ai/types";
@@ -11,6 +12,7 @@ import type {
   ModelSettings,
   StoredMessage,
 } from "../lib/conversations/types";
+import type { KnowledgeBaseSummary } from "../lib/knowledge-bases/types";
 import styles from "./page.module.css";
 
 /** 请求 JSON 接口并把服务端错误转换成可展示的异常。 */
@@ -105,6 +107,8 @@ function SourceList({ sources }: { sources: MessageSource[] }) {
 export default function Home() {
   const [settings, setSettings] = useState<ModelSettings>();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseSummary[]>([]);
+  const [knowledgeBaseId, setKnowledgeBaseId] = useState("default");
   const [activeId, setActiveId] = useState<string>();
   const [messages, setMessages] = useState<StoredMessage[]>([]);
   const [provider, setProvider] = useState<ChatProviderId>("gemini");
@@ -126,7 +130,7 @@ export default function Home() {
     return result.conversations;
   }
 
-  /** 加载一个会话的完整消息，并同步其固定模型。 */
+  /** 加载一个会话的完整消息，并同步其固定模型和知识库。 */
   async function loadConversation(id: string) {
     const result = await requestJson<{ conversation: ConversationDetail }>(
       `/api/conversations/${encodeURIComponent(id)}`,
@@ -135,17 +139,26 @@ export default function Home() {
     setMessages(result.conversation.messages);
     setProvider(result.conversation.provider);
     setModel(result.conversation.model);
+    setKnowledgeBaseId(result.conversation.knowledgeBaseId);
     setError("");
   }
 
   useEffect(() => {
     async function initialize() {
       try {
-        const [{ settings: loadedSettings }, conversationList] = await Promise.all([
+        const [
+          { settings: loadedSettings },
+          { knowledgeBases: loadedKnowledgeBases },
+          conversationList,
+        ] = await Promise.all([
           requestJson<{ settings: ModelSettings }>("/api/settings"),
+          requestJson<{ knowledgeBases: KnowledgeBaseSummary[] }>(
+            "/api/knowledge-bases",
+          ),
           refreshConversations(),
         ]);
         setSettings(loadedSettings);
+        setKnowledgeBases(loadedKnowledgeBases);
         setProvider(loadedSettings.defaultProvider);
         setModel(
           loadedSettings.providers.find(
@@ -178,6 +191,7 @@ export default function Home() {
     setActiveId(undefined);
     setMessages([]);
     setProvider(defaultProvider);
+    setKnowledgeBaseId("default");
     setModel(
       settings?.providers.find((item) => item.id === defaultProvider)?.model ?? "",
     );
@@ -233,6 +247,7 @@ export default function Home() {
           message: question,
           provider,
           model: model.trim() || undefined,
+          knowledgeBaseId,
         }),
       });
 
@@ -297,6 +312,14 @@ export default function Home() {
   const selectedProvider = settings?.providers.find(
     (item) => item.id === provider,
   );
+  const selectedKnowledgeBase = knowledgeBases.find(
+    (item) => item.id === knowledgeBaseId,
+  );
+
+  /** 根据 ID 返回知识库名称，兼容旧会话仍指向默认知识库的情况。 */
+  function getKnowledgeBaseName(id: string) {
+    return knowledgeBases.find((item) => item.id === id)?.name ?? "默认示例知识库";
+  }
 
   return (
     <div className={styles.shell}>
@@ -305,13 +328,16 @@ export default function Home() {
           <div className={styles.brandMark}>M</div>
           <div>
             <strong>Mini-MaxKB</strong>
-            <span>L4 · 企业级 RAG</span>
+            <span>L5A · 知识库管理</span>
           </div>
         </div>
 
         <button className={styles.newButton} onClick={startNewConversation}>
           <span>＋</span> 新建对话
         </button>
+        <Link className={styles.manageLink} href="/knowledge-bases">
+          管理知识库
+        </Link>
 
         <div className={styles.historyLabel}>历史会话</div>
         <nav className={styles.history} aria-label="历史会话">
@@ -327,7 +353,9 @@ export default function Home() {
                 onClick={() => void loadConversation(conversation.id)}
               >
                 <strong>{conversation.title}</strong>
-                <span>{conversation.provider} · {formatTime(conversation.updatedAt)}</span>
+                <span>
+                  {getKnowledgeBaseName(conversation.knowledgeBaseId)} · {formatTime(conversation.updatedAt)}
+                </span>
               </button>
             ))
           )}
@@ -347,6 +375,23 @@ export default function Home() {
           </div>
 
           <div className={styles.modelControls}>
+            <label>
+              <span>知识库</span>
+              <select
+                disabled={Boolean(activeId) || isSending}
+                value={knowledgeBaseId}
+                onChange={(event) => setKnowledgeBaseId(event.target.value)}
+              >
+                {knowledgeBases.map((knowledgeBase) => (
+                  <option key={knowledgeBase.id} value={knowledgeBase.id}>
+                    {knowledgeBase.name}（{knowledgeBase.chunkCount} 段）
+                  </option>
+                ))}
+                {knowledgeBases.length === 0 && (
+                  <option value="default">默认示例知识库</option>
+                )}
+              </select>
+            </label>
             <label>
               <span>聊天供应商</span>
               <select
@@ -379,7 +424,7 @@ export default function Home() {
               <div className={styles.welcomeIcon}>KB</div>
               <h2>向你的知识库提问</h2>
               <p>
-                系统会融合向量语义和关键词信号，通过相关度阈值后，再让 {provider} 基于命中内容回答。
+                当前选择「{selectedKnowledgeBase?.name ?? "默认示例知识库"}」。系统会融合向量语义和关键词信号，通过相关度阈值后，再让 {provider} 基于命中内容回答。
               </p>
               <div className={styles.flow}>
                 <span>向量 + 关键词</span><b>→</b><span>融合排序与阈值</span><b>→</b><span>可靠回答</span>
@@ -442,17 +487,33 @@ export default function Home() {
               placeholder={
                 selectedProvider?.available === false
                   ? `请先在 .env.local 配置 ${provider} API Key`
+                  : selectedKnowledgeBase &&
+                      !selectedKnowledgeBase.isBuiltin &&
+                      selectedKnowledgeBase.chunkCount === 0
+                    ? "请先到知识库管理页上传并索引文档"
                   : "输入问题，Enter 发送，Shift + Enter 换行"
               }
               rows={3}
               value={input}
             />
-            <button disabled={!input.trim() || isSending} type="submit">
+            <button
+              disabled={
+                !input.trim() ||
+                isSending ||
+                Boolean(
+                  selectedKnowledgeBase &&
+                    !selectedKnowledgeBase.isBuiltin &&
+                    selectedKnowledgeBase.chunkCount === 0,
+                )
+              }
+              type="submit"
+            >
               {isSending ? "生成中" : "发送"}
             </button>
           </form>
           <div className={styles.composerMeta}>
             <span>{status}</span>
+            <span>知识库：{selectedKnowledgeBase?.name ?? "-"}</span>
             <span>
               Embedding：{settings?.embedding.provider ?? "-"} / {settings?.embedding.model ?? "-"}
             </span>

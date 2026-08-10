@@ -16,6 +16,7 @@ interface ConversationRow {
   title: string;
   provider: ChatProviderId;
   model: string;
+  knowledge_base_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,6 +34,7 @@ interface CreateConversationInput {
   title: string;
   provider: ChatProviderId;
   model: string;
+  knowledgeBaseId?: string;
 }
 
 interface AddMessageInput {
@@ -49,6 +51,7 @@ function mapConversation(row: ConversationRow): ConversationSummary {
     title: row.title,
     provider: row.provider,
     model: row.model,
+    knowledgeBaseId: row.knowledge_base_id ?? "default",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -107,6 +110,7 @@ export class ConversationRepository {
         title TEXT NOT NULL,
         provider TEXT NOT NULL,
         model TEXT NOT NULL,
+        knowledge_base_id TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -126,6 +130,14 @@ export class ConversationRepository {
       CREATE INDEX IF NOT EXISTS conversations_updated_idx
         ON conversations(updated_at DESC);
     `);
+
+    const conversationColumns = this.database
+      .pragma("table_info(conversations)") as Array<{ name: string }>;
+    if (!conversationColumns.some((column) => column.name === "knowledge_base_id")) {
+      this.database.exec(
+        "ALTER TABLE conversations ADD COLUMN knowledge_base_id TEXT",
+      );
+    }
   }
 
   /** 创建会话并记录该会话固定使用的聊天供应商和模型。 */
@@ -136,6 +148,7 @@ export class ConversationRepository {
       title: input.title.trim().slice(0, 80) || "新对话",
       provider: input.provider,
       model: input.model,
+      knowledgeBaseId: input.knowledgeBaseId ?? "default",
       createdAt: now,
       updatedAt: now,
     };
@@ -143,14 +156,15 @@ export class ConversationRepository {
     this.database
       .prepare(
         `INSERT INTO conversations
-          (id, title, provider, model, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+          (id, title, provider, model, knowledge_base_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         conversation.id,
         conversation.title,
         conversation.provider,
         conversation.model,
+        conversation.knowledgeBaseId,
         conversation.createdAt,
         conversation.updatedAt,
       );
@@ -228,16 +242,30 @@ export class ConversationRepository {
 
 const globalDatabase = globalThis as typeof globalThis & {
   miniMaxKbConversationRepository?: ConversationRepository;
+  miniMaxKbConversationRepositoryVersion?: number;
 };
+
+const CONVERSATION_REPOSITORY_VERSION = 2;
 
 /**
  * 复用服务端 SQLite 连接，避免 Next 开发热更新期间反复创建数据库句柄。
  */
 export function getConversationRepository() {
+  if (
+    globalDatabase.miniMaxKbConversationRepository &&
+    globalDatabase.miniMaxKbConversationRepositoryVersion !==
+      CONVERSATION_REPOSITORY_VERSION
+  ) {
+    globalDatabase.miniMaxKbConversationRepository.close();
+    globalDatabase.miniMaxKbConversationRepository = undefined;
+  }
+
   if (!globalDatabase.miniMaxKbConversationRepository) {
     globalDatabase.miniMaxKbConversationRepository = new ConversationRepository(
       process.env.MINI_MAXKB_DATABASE_PATH?.trim() || undefined,
     );
+    globalDatabase.miniMaxKbConversationRepositoryVersion =
+      CONVERSATION_REPOSITORY_VERSION;
   }
 
   return globalDatabase.miniMaxKbConversationRepository;

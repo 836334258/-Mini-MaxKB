@@ -49,7 +49,7 @@ export function assertIndexCompatible(
 
   if (!matches) {
     throw new Error(
-      "当前向量模型与索引不一致。更换 Embedding 模型或维度后必须重新执行 pnpm l1:index。",
+      "当前向量模型与索引不一致。默认示例库请重新执行 pnpm l1:index，自定义知识库请在管理页重建索引。",
     );
   }
 }

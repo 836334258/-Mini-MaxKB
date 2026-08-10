@@ -25,6 +25,7 @@ export interface ConversationSummary {
   title: string;
   provider: ChatProviderId;
   model: string;
+  knowledgeBaseId: string;
   createdAt: string;
   updatedAt: string;
 }

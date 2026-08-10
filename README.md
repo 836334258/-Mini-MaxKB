@@ -141,6 +141,32 @@ The sample evaluation set is stored in `data/l4-evaluation.json` and reports
 Hit@K, mean reciprocal rank, and out-of-domain rejection accuracy. Add real
 business questions to this file before tuning the threshold or score weights.
 
+### L5A: knowledge base management
+
+L5A starts the platform layer without replacing the L1–L4 learning baseline.
+The built-in sample knowledge base remains read-only and keeps using
+`.mini-maxkb/l1-index.json`. Each custom knowledge base stores its uploaded
+`.md` and `.txt` documents and its vector index in a separate directory under
+`.mini-maxkb/knowledge-bases`.
+
+Start the Web app and open the management page:
+
+```bash
+pnpm dev
+```
+
+Visit [http://localhost:3000/knowledge-bases](http://localhost:3000/knowledge-bases),
+create a knowledge base, and upload a UTF-8 `.md` or `.txt` file up to 2 MB.
+The server rebuilds that knowledge base's complete index after each upload.
+Return to the chat page and choose the knowledge base before sending the first
+message. Existing conversations keep their originally selected knowledge base.
+
+Run the offline SQLite and isolated-index tests with:
+
+```bash
+pnpm test:l5a
+```
+
 ## Getting Started
 
 First, run the development server:
