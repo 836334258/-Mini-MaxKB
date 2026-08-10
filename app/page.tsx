@@ -80,7 +80,7 @@ function SourceList({ sources }: { sources: MessageSource[] }) {
 
   return (
     <div className={styles.sources}>
-      <div className={styles.sourcesTitle}>检索来源</div>
+      <div className={styles.sourcesTitle}>混合检索来源</div>
       {sources.map((source, index) => (
         <details className={styles.source} key={`${source.id}-${index}`}>
           <summary>
@@ -88,6 +88,13 @@ function SourceList({ sources }: { sources: MessageSource[] }) {
             <span>{source.score.toFixed(4)}</span>
           </summary>
           <p>{source.content}</p>
+          {(source.semanticScore !== undefined || source.keywordScore !== undefined) && (
+            <div className={styles.sourceMetrics}>
+              <span>融合 {source.score.toFixed(4)}</span>
+              <span>向量 {source.semanticScore?.toFixed(4) ?? "-"}</span>
+              <span>关键词 {source.keywordScore?.toFixed(4) ?? "-"}</span>
+            </div>
+          )}
           <small>{source.source}#{source.position}</small>
         </details>
       ))}
@@ -237,6 +244,13 @@ export default function Home() {
         if (streamEvent.type === "status") {
           setStatus(streamEvent.message);
         }
+        if (streamEvent.type === "retrieval") {
+          setStatus(
+            streamEvent.diagnostics.rejected
+              ? `最高相关度 ${streamEvent.diagnostics.topScore?.toFixed(4) ?? "-"}，低于阈值，已可靠拒答`
+              : `混合检索命中 ${streamEvent.diagnostics.returnedCount} 条，最高分 ${streamEvent.diagnostics.topScore?.toFixed(4) ?? "-"}`,
+          );
+        }
         if (streamEvent.type === "sources") {
           setStreamingSources(streamEvent.sources);
           setStatus("正在接收答案…");
@@ -291,7 +305,7 @@ export default function Home() {
           <div className={styles.brandMark}>M</div>
           <div>
             <strong>Mini-MaxKB</strong>
-            <span>L3 · Web 知识库</span>
+            <span>L4 · 企业级 RAG</span>
           </div>
         </div>
 
@@ -365,10 +379,10 @@ export default function Home() {
               <div className={styles.welcomeIcon}>KB</div>
               <h2>向你的知识库提问</h2>
               <p>
-                系统会先检索本地文档，再让 {provider} 基于命中内容回答，并保留可追溯的来源。
+                系统会融合向量语义和关键词信号，通过相关度阈值后，再让 {provider} 基于命中内容回答。
               </p>
               <div className={styles.flow}>
-                <span>问题向量化</span><b>→</b><span>Top K 检索</span><b>→</b><span>模型回答</span>
+                <span>向量 + 关键词</span><b>→</b><span>融合排序与阈值</span><b>→</b><span>可靠回答</span>
               </div>
             </div>
           ) : (
@@ -441,6 +455,9 @@ export default function Home() {
             <span>{status}</span>
             <span>
               Embedding：{settings?.embedding.provider ?? "-"} / {settings?.embedding.model ?? "-"}
+            </span>
+            <span>
+              混合检索：Top {settings?.retrieval.topK ?? "-"} · 阈值 {settings?.retrieval.minScore ?? "-"}
             </span>
           </div>
         </footer>

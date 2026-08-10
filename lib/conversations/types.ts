@@ -6,6 +6,8 @@ export interface MessageSource {
   title: string;
   position: number;
   score: number;
+  semanticScore?: number;
+  keywordScore?: number;
   content: string;
 }
 
@@ -41,5 +43,12 @@ export interface ModelSettings {
   embedding: {
     provider: string;
     model: string;
+  };
+  retrieval: {
+    strategy: "hybrid";
+    topK: number;
+    candidateK: number;
+    minScore: number;
+    semanticWeight: number;
   };
 }

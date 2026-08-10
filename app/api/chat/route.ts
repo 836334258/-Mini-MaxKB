@@ -15,6 +15,7 @@ import {
   loadVectorIndex,
 } from "../../../lib/knowledge/vector-index";
 import { askKnowledgeBase } from "../../../lib/rag/rag-service";
+import { readRetrievalConfig } from "../../../lib/rag/retrieval-config";
 
 export const runtime = "nodejs";
 
@@ -31,12 +32,14 @@ const encoder = new TextEncoder();
 function toMessageSources(
   sources: Awaited<ReturnType<typeof askKnowledgeBase>>["sources"],
 ): MessageSource[] {
-  return sources.map(({ chunk, score }) => ({
+  return sources.map(({ chunk, score, semanticScore, keywordScore }) => ({
     id: chunk.id,
     source: chunk.source,
     title: chunk.title,
     position: chunk.position,
     score,
+    semanticScore,
+    keywordScore,
     content: chunk.content,
   }));
 }
@@ -95,6 +98,7 @@ export async function POST(request: Request) {
       model: existingConversation?.model ?? body.model,
     });
     const embeddingConfig = readEmbeddingProviderConfig();
+    const retrievalConfig = readRetrievalConfig();
     const vectorIndex = await loadVectorIndex(
       process.env.MINI_MAXKB_INDEX_PATH?.trim() ||
         ".mini-maxkb/l1-index.json",
@@ -136,6 +140,7 @@ export async function POST(request: Request) {
               topK: 3,
               systemPrompt: process.env.AI_SYSTEM_PROMPT,
               history,
+              retrieval: retrievalConfig,
             },
           );
           const sources = toMessageSources(result.sources);
@@ -146,6 +151,10 @@ export async function POST(request: Request) {
             sources,
           });
 
+          enqueueEvent(controller, {
+            type: "retrieval",
+            diagnostics: result.diagnostics,
+          });
           enqueueEvent(controller, { type: "sources", sources });
           for (const content of splitAnswer(result.response.content)) {
             enqueueEvent(controller, { type: "delta", content });

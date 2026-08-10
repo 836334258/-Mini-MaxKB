@@ -16,7 +16,9 @@
     "test:l1": "tsx --test tests/knowledge/semantic-search.test.ts",
     "l2:ask": "tsx scripts/l2-rag.ts",
     "test:l2": "tsx --test tests/rag/rag-service.test.ts",
-    "test:l3": "tsx --test tests/db/conversation-repository.test.ts"
+    "test:l3": "tsx --test tests/db/conversation-repository.test.ts",
+    "test:l4": "tsx --test tests/knowledge/hybrid-search.test.ts tests/rag/reliability.test.ts tests/evaluation/retrieval-evaluation.test.ts",
+    "eval:l4": "tsx scripts/l4-evaluate.ts"
   },
   "dependencies": {
     "better-sqlite3": "12.9.0",

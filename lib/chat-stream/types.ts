@@ -3,10 +3,12 @@ import type {
   MessageSource,
   StoredMessage,
 } from "../conversations/types";
+import type { RetrievalDiagnostics } from "../knowledge/hybrid-search";
 
 export type ChatStreamEvent =
   | { type: "conversation"; conversation: ConversationSummary }
   | { type: "status"; message: string }
+  | { type: "retrieval"; diagnostics: RetrievalDiagnostics }
   | { type: "sources"; sources: MessageSource[] }
   | { type: "delta"; content: string }
   | { type: "done"; message: StoredMessage }

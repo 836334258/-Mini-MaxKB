@@ -1,0 +1,22 @@
+[
+  {
+    "id": "embedding-reindex",
+    "query": "更换向量模型以后为什么要重新建索引？",
+    "expectedSources": ["model-management.md"]
+  },
+  {
+    "id": "api-key-browser",
+    "query": "API Key 为什么不能放进浏览器代码？",
+    "expectedSources": ["security.md"]
+  },
+  {
+    "id": "l1-versus-l2",
+    "query": "L1 和 L2 的主要区别是什么？",
+    "expectedSources": ["learning-path.md"]
+  },
+  {
+    "id": "out-of-domain-weather",
+    "query": "明天上海天气怎么样？",
+    "expectedSources": []
+  }
+]

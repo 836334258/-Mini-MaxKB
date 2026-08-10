@@ -3,6 +3,7 @@ import {
   type ChatProviderId,
 } from "../../../lib/ai/types";
 import type { ModelSettings } from "../../../lib/conversations/types";
+import { readRetrievalConfig } from "../../../lib/rag/retrieval-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ function readDefaultProvider(): ChatProviderId {
  * 只向浏览器暴露模型名称和可用状态，绝不返回 API Key 或代理配置。
  */
 export function GET() {
+  const retrieval = readRetrievalConfig();
   const settings: ModelSettings = {
     defaultProvider: readDefaultProvider(),
     providers: [
@@ -34,6 +36,10 @@ export function GET() {
     embedding: {
       provider: process.env.EMBEDDING_PROVIDER?.trim() || "gemini",
       model: process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-2",
+    },
+    retrieval: {
+      strategy: "hybrid",
+      ...retrieval,
     },
   };
 

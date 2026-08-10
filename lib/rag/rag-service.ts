@@ -4,6 +4,11 @@ import type {
   ChatProvider,
   ChatResponse,
 } from "../ai/types";
+import {
+  searchChunksHybrid,
+  type HybridSearchOptions,
+  type RetrievalDiagnostics,
+} from "../knowledge/hybrid-search";
 import { searchChunks, type SearchResult } from "../knowledge/semantic-search";
 import type { VectorIndex } from "../knowledge/vector-index";
 
@@ -18,11 +23,19 @@ interface AskKnowledgeBaseOptions {
   topK?: number;
   systemPrompt?: string;
   history?: ChatMessage[];
+  retrieval?: HybridSearchOptions;
+}
+
+export interface RagSearchResult extends SearchResult {
+  semanticScore?: number;
+  keywordScore?: number;
 }
 
 export interface RagAnswer {
   response: ChatResponse;
-  sources: SearchResult[];
+  sources: RagSearchResult[];
+  diagnostics: RetrievalDiagnostics;
+  grounded: boolean;
 }
 
 /**
@@ -92,13 +105,47 @@ export async function askKnowledgeBase(
     throw new Error("Embedding 模型没有返回问题向量");
   }
 
-  const sources = searchChunks(
-    queryVector,
-    dependencies.index.chunks,
-    options.topK ?? 3,
-  );
+  let sources: RagSearchResult[];
+  let diagnostics: RetrievalDiagnostics;
+
+  if (options.retrieval) {
+    const retrieval = searchChunksHybrid(
+      question,
+      queryVector,
+      dependencies.index.chunks,
+      options.retrieval,
+    );
+    sources = retrieval.results;
+    diagnostics = retrieval.diagnostics;
+  } else {
+    sources = searchChunks(
+      queryVector,
+      dependencies.index.chunks,
+      options.topK ?? 3,
+    ).map((result) => ({ ...result, semanticScore: result.score }));
+    diagnostics = {
+      strategy: "semantic",
+      candidateCount: dependencies.index.chunks.length,
+      returnedCount: sources.length,
+      minScore: 0,
+      semanticWeight: 1,
+      topScore: sources[0]?.score,
+      rejected: sources.length === 0,
+    };
+  }
+
   if (sources.length === 0) {
-    throw new Error("知识库索引中没有可用的文档分段");
+    return {
+      response: {
+        provider: dependencies.chatProvider.id,
+        model: dependencies.chatProvider.model,
+        content:
+          "知识库中没有检索到足够相关的资料，我暂时无法可靠回答这个问题。请补充资料或换一种问法。",
+      },
+      sources,
+      diagnostics,
+      grounded: false,
+    };
   }
 
   const response = await dependencies.chatProvider.chat({
@@ -111,5 +158,5 @@ export async function askKnowledgeBase(
     temperature: 0.2,
   });
 
-  return { response, sources };
+  return { response, sources, diagnostics, grounded: true };
 }

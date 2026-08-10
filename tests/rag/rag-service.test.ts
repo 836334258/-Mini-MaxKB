@@ -76,6 +76,8 @@ test("RAG 先检索最相关分段，再要求聊天模型引用该来源", asyn
   );
 
   assert.equal(result.response.content, "修改配置即可切换聊天模型。[1]");
+  assert.equal(result.grounded, true);
+  assert.equal(result.diagnostics.strategy, "semantic");
   assert.deepEqual(
     result.sources.map((source) => source.chunk.id),
     ["models.md#0"],

@@ -107,6 +107,40 @@ Run the SQLite persistence test with:
 pnpm test:l3
 ```
 
+### L4: enterprise RAG retrieval
+
+L4 keeps the L2 semantic-search path intact and upgrades the Web application
+to hybrid retrieval. It combines vector similarity with lightweight BM25
+keyword scores, filters low-confidence results, and exposes retrieval scores
+for diagnosis. If no result reaches the configured threshold, the chat model
+is not called and the application returns a reliable insufficient-context
+answer.
+
+The server-side defaults can be tuned in `.env.local`:
+
+```bash
+RAG_TOP_K=3
+RAG_CANDIDATE_K=12
+RAG_MIN_SCORE=0.45
+RAG_SEMANTIC_WEIGHT=0.7
+```
+
+Run the offline behavior tests:
+
+```bash
+pnpm test:l4
+```
+
+Run the labeled retrieval evaluation with the configured real Embedding model:
+
+```bash
+pnpm eval:l4
+```
+
+The sample evaluation set is stored in `data/l4-evaluation.json` and reports
+Hit@K, mean reciprocal rank, and out-of-domain rejection accuracy. Add real
+business questions to this file before tuning the threshold or score weights.
+
 ## Getting Started
 
 First, run the development server:
