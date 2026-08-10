@@ -26,7 +26,9 @@
     "langchain:lc0": "tsx scripts/lc0-quickstart.ts",
     "test:langchain:lc0": "tsx --test tests/langchain/quickstart.test.ts",
     "langchain:lc1": "tsx scripts/lc1-research.ts",
-    "test:langchain:lc1": "tsx --test tests/langchain/research-agent.test.ts"
+    "test:langchain:lc1": "tsx --test tests/langchain/research-agent.test.ts",
+    "langchain:lc1b": "tsx scripts/lc1b-model-config.ts",
+    "test:langchain:lc1b": "tsx --test tests/langchain/model-config.test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.2.5",

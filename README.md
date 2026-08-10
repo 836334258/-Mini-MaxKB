@@ -67,6 +67,48 @@ model tool call, external text tool result, and grounded final answer. This
 lesson does not add conversational memory yet; that is the next independent
 concept.
 
+### LangChain LC1B: configurable model objects
+
+LC1B keeps the LC1A tools and system prompt unchanged, but initializes a chat
+model object with `initChatModel` before creating the Agent. The model and Agent
+therefore have separate responsibilities:
+
+- `initChatModel` selects a provider and controls generation/network settings;
+- `createResearchAgent` owns the system prompt, tools, and agent loop;
+- provider API keys stay in server-side environment variables and are not part
+  of the printable model configuration.
+
+The default Gemini settings are intentionally conservative for grounded
+research answers:
+
+```bash
+LANGCHAIN_MODEL_PROVIDER=google-genai
+LANGCHAIN_MODEL=gemini-3.5-flash
+LANGCHAIN_TEMPERATURE=0.2
+LANGCHAIN_TIMEOUT_MS=120000
+LANGCHAIN_MAX_TOKENS=2048
+LANGCHAIN_MAX_RETRIES=2
+```
+
+Run the offline configuration tests and the real Agent:
+
+```bash
+pnpm test:langchain:lc1b
+pnpm langchain:lc1b
+```
+
+The same Agent can use the installed DeepSeek integration without source-code
+changes. Configure `DEEPSEEK_API_KEY` locally, then change only these values:
+
+```bash
+LANGCHAIN_MODEL_PROVIDER=deepseek
+LANGCHAIN_MODEL=deepseek-chat
+```
+
+Use a DeepSeek model that supports tool calling. Provider model availability
+can change, so the model name remains configuration rather than a hard-coded
+Agent concern.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

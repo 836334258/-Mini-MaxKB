@@ -1,4 +1,5 @@
 import { tool } from "@langchain/core/tools";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { createAgent } from "langchain";
 import { z } from "zod";
 
@@ -132,8 +133,10 @@ export const fetchTextFromUrl = tool(
   },
 );
 
-/** 创建带系统提示词和外部文本工具的 LC1A 研究 Agent。 */
-export function createResearchAgent(model = DEFAULT_QUICKSTART_MODEL) {
+/** 创建研究 Agent；既接受模型字符串，也接受 LC1B 初始化后的模型对象。 */
+export function createResearchAgent(
+  model: string | BaseChatModel = DEFAULT_QUICKSTART_MODEL,
+) {
   return createAgent({
     model,
     tools: [fetchTextFromUrl],
