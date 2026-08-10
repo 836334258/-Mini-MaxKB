@@ -167,6 +167,39 @@ uses the supported `streamMode: ["updates", "messages"]` path for
 `google-genai`, which correctly generates the ID and completes the
 model → tool → model loop. Other configured providers use v3 projections.
 
+### LangChain LC2: Document, Loader, and recursive text splitting
+
+LC2 starts the RAG data pipeline without calling an Embedding or chat model. A
+small local text Loader converts a UTF-8 Markdown/TXT file into LangChain's
+standard `Document` shape:
+
+- `pageContent` contains text that will later be embedded and retrieved;
+- `metadata` records the source, title, and file type for traceability;
+- `id` gives the original document and every generated chunk a stable identity.
+
+`RecursiveCharacterTextSplitter` then tries paragraph, line, sentence,
+punctuation, word, and character boundaries in order. The lesson adds Chinese
+punctuation separators and preserves the source metadata on every chunk. It
+also adds `chunkIndex` and `chunkCount`; LangChain adds `loc.lines`.
+
+Run the offline tests and print every complete Document object:
+
+```bash
+pnpm test:langchain:lc2
+pnpm langchain:lc2
+```
+
+Try different files and chunk parameters without changing source code:
+
+```bash
+pnpm langchain:lc2 -- --input data/l1-documents/security.md --chunk-size 100 --overlap 20
+```
+
+This lesson deliberately does not replace the earlier Mini-MaxKB custom
+chunker. Keeping both implementations makes the mapping visible:
+`content` becomes `pageContent`, while `source`, `title`, and `position` move
+into `metadata`. Embedding and semantic retrieval are the next lesson.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

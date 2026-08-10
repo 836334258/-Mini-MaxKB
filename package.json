@@ -32,7 +32,9 @@
     "langchain:lc1c": "tsx scripts/lc1c-memory.ts",
     "test:langchain:lc1c": "tsx --test tests/langchain/memory-agent.test.ts",
     "langchain:lc1d": "tsx scripts/lc1d-streaming.ts",
-    "test:langchain:lc1d": "tsx --test tests/langchain/streaming-agent.test.ts"
+    "test:langchain:lc1d": "tsx --test tests/langchain/streaming-agent.test.ts",
+    "langchain:lc2": "tsx scripts/lc2-documents.ts",
+    "test:langchain:lc2": "tsx --test tests/langchain/document-processing.test.ts"
   },
   "dependencies": {
     "@langchain/core": "1.2.5",
@@ -40,6 +42,7 @@
     "@langchain/google": "0.2.1",
     "@langchain/google-genai": "2.2.0",
     "@langchain/langgraph": "1.4.9",
+    "@langchain/textsplitters": "1.0.1",
     "better-sqlite3": "12.11.1",
     "deepagents": "1.12.2",
     "langchain": "1.5.5",
