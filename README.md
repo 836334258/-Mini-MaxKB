@@ -200,6 +200,36 @@ chunker. Keeping both implementations makes the mapping visible:
 `content` becomes `pageContent`, while `source`, `title`, and `position` move
 into `metadata`. Embedding and semantic retrieval are the next lesson.
 
+### LangChain LC3: Embeddings and semantic search
+
+LC3 converts every LC2 chunk into a vector and stores it in LangChain's
+ephemeral `MemoryVectorStore`. It then converts the user question into a query
+vector and returns the closest chunks with cosine-similarity scores.
+
+The course adapter maps the existing replaceable Mini-MaxKB Embedding Provider
+onto LangChain's two standard methods:
+
+- `embedDocuments()` indexes knowledge chunks in a batch;
+- `embedQuery()` embeds a user question for retrieval.
+
+This separation matters because document and query embeddings can require
+different provider-side task instructions. The chat model remains independent:
+a future RAG answer may use DeepSeek while retrieval continues to use Google
+Embedding.
+
+Run the deterministic offline tests first, then use the Google key already
+stored in `.env.local` for the real semantic-search demonstration:
+
+```bash
+pnpm test:langchain:lc3
+pnpm langchain:lc3
+pnpm langchain:lc3 -- --query "哪个阶段开始生成 RAG 回答？" --top-k 2
+```
+
+`MemoryVectorStore` performs an exact linear scan and disappears when the Node
+process exits, so it is appropriate for this lesson rather than production.
+Persistent vector databases and retrievers come later in the course.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

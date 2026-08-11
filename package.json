@@ -34,9 +34,12 @@
     "langchain:lc1d": "tsx scripts/lc1d-streaming.ts",
     "test:langchain:lc1d": "tsx --test tests/langchain/streaming-agent.test.ts",
     "langchain:lc2": "tsx scripts/lc2-documents.ts",
-    "test:langchain:lc2": "tsx --test tests/langchain/document-processing.test.ts"
+    "test:langchain:lc2": "tsx --test tests/langchain/document-processing.test.ts",
+    "langchain:lc3": "tsx scripts/lc3-semantic-search.ts",
+    "test:langchain:lc3": "tsx --test tests/langchain/semantic-search.test.ts"
   },
   "dependencies": {
+    "@langchain/classic": "1.0.41",
     "@langchain/core": "1.2.5",
     "@langchain/deepseek": "1.1.6",
     "@langchain/google": "0.2.1",
