@@ -294,6 +294,41 @@ from retrieved text, but cannot completely prevent indirect prompt injection.
 Production systems must still validate that answers and citations are grounded
 in the returned source documents.
 
+### LangChain LC6: history-aware conversational RAG
+
+LC6 makes ambiguous follow-up questions searchable. With no history, the
+original question goes directly to the Retriever. With history, a small query
+rewrite Chain first turns a follow-up such as `为什么必须这样做？` into a
+standalone question such as `为什么更换 Embedding 模型后必须重建索引？`.
+
+```text
+question + recent history → standalone query → Retriever → Documents
+                       history + Documents → answer prompt → answer
+```
+
+The answer and query models use the same replaceable ChatModel by default, but
+can be supplied independently. Only the six most recent complete turns are
+converted into alternating human/AI messages, limiting token growth and stale
+conversation interference.
+
+Run the offline tests and real two-turn conversation:
+
+```bash
+pnpm test:langchain:lc6
+pnpm langchain:lc6
+```
+
+Try a different follow-up or chat provider:
+
+```bash
+pnpm langchain:lc6 -- --question "API Key 应该放在哪里？" --follow-up "为什么不能放前端？"
+pnpm langchain:lc6 -- --provider deepseek --model deepseek-chat
+```
+
+This lesson passes history explicitly in memory so the data flow remains
+visible. Persisting conversations and reconstructing history by conversation
+ID is the next separate concern.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

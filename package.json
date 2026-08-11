@@ -40,7 +40,9 @@
     "langchain:lc4": "tsx scripts/lc4-retriever.ts",
     "test:langchain:lc4": "tsx --test tests/langchain/course-retriever.test.ts",
     "langchain:lc5": "tsx scripts/lc5-rag-chain.ts",
-    "test:langchain:lc5": "tsx --test tests/langchain/rag-chain.test.ts"
+    "test:langchain:lc5": "tsx --test tests/langchain/rag-chain.test.ts",
+    "langchain:lc6": "tsx scripts/lc6-conversational-rag.ts",
+    "test:langchain:lc6": "tsx --test tests/langchain/conversational-rag.test.ts"
   },
   "dependencies": {
     "@langchain/classic": "1.0.41",
