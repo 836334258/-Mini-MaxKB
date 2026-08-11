@@ -230,6 +230,36 @@ pnpm langchain:lc3 -- --query "哪个阶段开始生成 RAG 回答？" --top-k 2
 process exits, so it is appropriate for this lesson rather than production.
 Persistent vector databases and retrievers come later in the course.
 
+### LangChain LC4: Retriever interface and metadata filtering
+
+LC4 wraps the LC3 vector store with `asRetriever()`. The responsibilities are
+now deliberately separate:
+
+- `MemoryVectorStore` stores vectors and implements similarity search;
+- `VectorStoreRetriever` is a Runnable that accepts a query through `invoke()`
+  and returns `Document[]`;
+- the Retriever's `k` controls the maximum number of returned documents;
+- an optional metadata predicate limits which sources may participate.
+
+The lesson indexes all three sample Markdown files so source filtering is
+observable. Run the offline tests and the real Retriever:
+
+```bash
+pnpm test:langchain:lc4
+pnpm langchain:lc4
+```
+
+Restrict retrieval to one source without changing the query:
+
+```bash
+pnpm langchain:lc4 -- --query "如何管理模型？" --source data/l1-documents/model-management.md --top-k 2
+```
+
+Unlike LC3's diagnostic `similaritySearchWithScore()`, a Retriever normally
+returns documents without similarity scores. That simpler contract lets a
+later prompt or RAG Chain depend on retrieval behavior without depending on a
+specific vector database.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

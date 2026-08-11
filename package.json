@@ -36,7 +36,9 @@
     "langchain:lc2": "tsx scripts/lc2-documents.ts",
     "test:langchain:lc2": "tsx --test tests/langchain/document-processing.test.ts",
     "langchain:lc3": "tsx scripts/lc3-semantic-search.ts",
-    "test:langchain:lc3": "tsx --test tests/langchain/semantic-search.test.ts"
+    "test:langchain:lc3": "tsx --test tests/langchain/semantic-search.test.ts",
+    "langchain:lc4": "tsx scripts/lc4-retriever.ts",
+    "test:langchain:lc4": "tsx --test tests/langchain/course-retriever.test.ts"
   },
   "dependencies": {
     "@langchain/classic": "1.0.41",
