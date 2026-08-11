@@ -260,6 +260,40 @@ returns documents without similarity scores. That simpler contract lets a
 later prompt or RAG Chain depend on retrieval behavior without depending on a
 specific vector database.
 
+### LangChain LC5: minimal grounded RAG Chain
+
+LC5 connects the existing pieces into the first complete retrieval-augmented
+generation flow:
+
+```text
+question → Retriever → Document[] → numbered context → ChatPromptTemplate
+         → replaceable ChatModel → StringOutputParser → answer + sources
+```
+
+The system prompt requires the model to use only retrieved context, cite facts
+as `[资料 n]`, and treat retrieved text as data rather than instructions. If the
+Retriever returns no documents, the Chain returns a fixed insufficient-context
+answer without calling the chat model.
+
+Run the offline orchestration tests and the real RAG example:
+
+```bash
+pnpm test:langchain:lc5
+pnpm langchain:lc5
+```
+
+The chat model can be changed independently from Google Embedding:
+
+```bash
+pnpm langchain:lc5 -- --provider deepseek --model deepseek-chat --question "API Key 应该放在哪里？"
+pnpm langchain:lc5 -- --provider google-genai --model gemini-3.5-flash --question "更换 Embedding 模型后要做什么？"
+```
+
+Prompt delimiters and instructions reduce accidental instruction-following
+from retrieved text, but cannot completely prevent indirect prompt injection.
+Production systems must still validate that answers and citations are grounded
+in the returned source documents.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by
