@@ -329,6 +329,35 @@ This lesson passes history explicitly in memory so the data flow remains
 visible. Persisting conversations and reconstructing history by conversation
 ID is the next separate concern.
 
+### LangChain LC7: persistent conversation history with SQLite
+
+LC7 stores each successful user/assistant turn in the project's existing
+SQLite conversation schema. A `conversationId` identifies the thread. On a
+later process start, the script reloads its ordered messages, pairs complete
+user/assistant rows into LC6 history, and resumes the history-aware RAG Chain.
+
+The course uses `.mini-maxkb/lc7-course.sqlite` by default so its demonstration
+conversations do not pollute the existing Web application's database.
+
+Start a new persistent conversation:
+
+```bash
+pnpm test:langchain:lc7
+pnpm langchain:lc7 -- --question "更换 Embedding 模型后需要做什么？"
+```
+
+Copy the printed ID and continue it from a new Node process:
+
+```bash
+pnpm langchain:lc7 -- --conversation-id <printed-id> --question "为什么必须这样做？"
+```
+
+An existing conversation keeps its original chat provider and model, even if
+different CLI model options are passed later. Only complete user/assistant
+pairs are restored; an interrupted, unmatched row is excluded from model
+history. LC7 persists message text for memory teaching, while the existing Web
+RAG flow remains responsible for persistent scored source snapshots.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by
