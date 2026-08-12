@@ -7,6 +7,7 @@ import {
 import {
   encodeCourseChatStreamEvent,
   toCourseStreamSources,
+  toStoredCourseSources,
   type CourseChatStreamEvent,
 } from "../../../../lib/langchain/course-chat-stream";
 import { openCourseConversationRepository } from "../../../../lib/langchain/course-conversation-store";
@@ -174,10 +175,14 @@ export async function POST(request: Request) {
             } else if (event.type === "delta") {
               enqueueEvent(controller, event);
             } else {
+              const sourceSnapshots = toCourseStreamSources(
+                event.result.sources,
+              );
               const assistantMessage = repository.addMessage({
                 conversationId: conversation.id,
                 role: "assistant",
                 content: event.result.answer,
+                sources: toStoredCourseSources(sourceSnapshots),
               });
               enqueueEvent(controller, {
                 type: "done",

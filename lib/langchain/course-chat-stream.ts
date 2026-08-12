@@ -1,5 +1,6 @@
 import type {
   ConversationSummary,
+  MessageSource,
   StoredMessage,
 } from "../conversations/types";
 import type { CourseRagResult } from "./rag-chain";
@@ -31,6 +32,23 @@ export function toCourseStreamSources(
     title: document.metadata.title,
     chunkIndex: document.metadata.chunkIndex,
     content: document.pageContent,
+  }));
+}
+
+/**
+ * 把课程来源转换成通用 SQLite 来源快照。
+ * 标准 Retriever 本课只返回排序后的 Document，不公开相似度，因此 score 用 0 表示未采集。
+ */
+export function toStoredCourseSources(
+  sources: CourseStreamSource[],
+): MessageSource[] {
+  return sources.map((source) => ({
+    id: source.id ?? `${source.source}:${source.chunkIndex}`,
+    source: source.source,
+    title: source.title,
+    position: source.chunkIndex,
+    score: 0,
+    content: source.content,
   }));
 }
 

@@ -58,6 +58,81 @@
   opacity: 0.5;
 }
 
+.historyPanel {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #dce2ed;
+  border-radius: 16px;
+  margin-bottom: 18px;
+  padding: 15px;
+}
+
+.historyHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.historyHeader > div {
+  display: flex;
+  gap: 9px;
+}
+
+.historyHeader span,
+.historyHeader small {
+  color: #7b879b;
+  font-size: 12px;
+}
+
+.historyList {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 3px;
+}
+
+.historyList > p {
+  color: #7b879b;
+  font-size: 13px;
+  margin: 4px;
+}
+
+.historyItem,
+.historyItemActive {
+  background: #f5f7fb;
+  border: 1px solid #dce2ed;
+  border-radius: 11px;
+  color: #27334a;
+  cursor: pointer;
+  display: grid;
+  flex: 0 0 230px;
+  gap: 5px;
+  padding: 11px 13px;
+  text-align: left;
+}
+
+.historyItemActive {
+  background: #eaf0ff;
+  border-color: #7d9be5;
+}
+
+.historyItem span,
+.historyItemActive span,
+.historyItem small,
+.historyItemActive small {
+  color: #718096;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyItem:disabled,
+.historyItemActive:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .runtimePanel {
   display: grid;
   grid-template-columns: 1fr 1.3fr 1.8fr;
@@ -301,7 +376,9 @@
   }
 
   .lessonHeader,
-  .headerActions {
+  .headerActions,
+  .historyHeader {
+    align-items: flex-start;
     flex-direction: column;
   }
 

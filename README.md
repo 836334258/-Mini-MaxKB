@@ -480,6 +480,33 @@ Handler persistence test with:
 pnpm test:langchain:lc10
 ```
 
+### LangChain LC11: source snapshots and conversation switching
+
+LC11 turns persisted chat rows into a small MaxKB-style history workspace.
+`GET /api/langchain-course/conversations` returns lightweight summaries ordered
+by recent activity. Selecting one summary calls the LC10 detail endpoint, pins
+that conversation's provider/model, and restores its messages.
+
+When a streamed RAG answer reaches `done`, the Route Handler now stores the
+retrieved document snapshots in the assistant message's `sources_json`. A page
+refresh therefore restores both the answer and the exact text chunks used at
+generation time, even if the knowledge source changes later. The standard
+course Retriever exposes ranked Documents but no numeric similarity score, so
+the shared database score field uses `0` as an explicit “not collected” value;
+the LC11 UI does not present it as a measured score.
+
+Manual exercise:
+
+1. Create two course conversations with different first questions.
+2. Switch between their summary cards without refreshing.
+3. Refresh and confirm the selected conversation and its source cards return.
+
+Run the list/detail/source persistence tests with:
+
+```bash
+pnpm test:langchain:lc11
+```
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

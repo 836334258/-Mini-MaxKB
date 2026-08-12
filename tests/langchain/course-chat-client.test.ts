@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { consumeCourseChatStream } from "../../lib/langchain/course-chat-client";
+import {
+  consumeCourseChatStream,
+  fetchCourseConversations,
+} from "../../lib/langchain/course-chat-client";
 import type { CourseChatStreamEvent } from "../../lib/langchain/course-chat-stream";
 
 /** 把字节按指定位置拆开，用来模拟真实网络不会遵守 JSON 行边界的情况。 */
@@ -56,4 +59,32 @@ test("LC9 客户端把非 2xx JSON 响应转换成异常", async () => {
     ),
     /会话不存在/,
   );
+});
+
+test("LC11 客户端读取轻量会话摘要列表", async () => {
+  const requests: Array<{ input: string; cache?: RequestCache }> = [];
+  const conversations = [
+    {
+      id: "conversation-1",
+      title: "第一问",
+      provider: "gemini" as const,
+      model: "gemini-test",
+      knowledgeBaseId: "langchain-course",
+      createdAt: "2026-08-12T00:00:00.000Z",
+      updatedAt: "2026-08-12T00:01:00.000Z",
+    },
+  ];
+
+  const result = await fetchCourseConversations(async (input, init) => {
+    requests.push({ input: String(input), cache: init?.cache });
+    return Response.json({ conversations });
+  });
+
+  assert.deepEqual(result, conversations);
+  assert.deepEqual(requests, [
+    {
+      input: "/api/langchain-course/conversations",
+      cache: "no-store",
+    },
+  ]);
 });

@@ -1,4 +1,7 @@
-import type { ConversationDetail } from "../conversations/types";
+import type {
+  ConversationDetail,
+  ConversationSummary,
+} from "../conversations/types";
 import type { CourseChatStreamEvent } from "./course-chat-stream";
 
 /** 从非 2xx 响应中尽量提取服务端返回的错误说明。 */
@@ -44,6 +47,28 @@ export async function fetchCourseConversation(
   }
 
   return body.conversation;
+}
+
+/** 获取按最近活动排序的课程会话摘要列表。 */
+export async function fetchCourseConversations(
+  fetcher: typeof fetch = fetch,
+) {
+  const response = await fetcher("/api/langchain-course/conversations", {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await readResponseError(response));
+  }
+
+  const body = (await response.json()) as {
+    conversations?: ConversationSummary[];
+  };
+  if (!Array.isArray(body.conversations)) {
+    throw new Error("服务端没有返回会话列表");
+  }
+
+  return body.conversations;
 }
 
 /**

@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import type { StoredMessage } from "../../lib/conversations/types";
+import type {
+  ConversationDetail,
+  ConversationSummary,
+  StoredMessage,
+} from "../../lib/conversations/types";
 import {
   consumeCourseChatStream,
   fetchCourseConversation,
+  fetchCourseConversations,
 } from "../../lib/langchain/course-chat-client";
 import type {
   CourseChatStreamEvent,
@@ -46,6 +51,36 @@ function storedMessageToCourseUiMessage(
       content: source.content,
     })),
   };
+}
+
+/** 把课程会话详情同步到模型控件和消息视图。 */
+function applyCourseConversation(
+  conversation: ConversationDetail,
+  setters: {
+    setConversationId: (id: string) => void;
+    setProvider: (provider: CourseModelProvider) => void;
+    setModel: (model: string) => void;
+    setMessages: (messages: CourseUiMessage[]) => void;
+  },
+) {
+  setters.setConversationId(conversation.id);
+  setters.setProvider(
+    conversation.provider === "gemini" ? "google-genai" : "deepseek",
+  );
+  setters.setModel(conversation.model);
+  setters.setMessages(
+    conversation.messages.map(storedMessageToCourseUiMessage),
+  );
+}
+
+/** 将 ISO 时间格式化成历史列表需要的本地短时间。 */
+function formatConversationTime(value: string) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 /** 更新指定消息；使用函数式 setState 可以安全处理连续到达的 delta。 */
@@ -89,6 +124,7 @@ export default function CourseChat({
   const [conversationId, setConversationId] = useState<string>();
   const [provider, setProvider] = useState<CourseModelProvider>(defaultProvider);
   const [model, setModel] = useState(defaultModel);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [messages, setMessages] = useState<CourseUiMessage[]>([]);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("准备就绪");
@@ -106,8 +142,25 @@ export default function CourseChat({
 
     /** 从服务端恢复上次会话，并防止组件卸载后继续修改状态。 */
     async function restoreConversation() {
+      try {
+        const conversationList = await fetchCourseConversations();
+        if (!cancelled) {
+          setConversations(conversationList);
+        }
+      } catch (listError) {
+        if (!cancelled) {
+          setError(
+            listError instanceof Error
+              ? `读取历史列表失败：${listError.message}`
+              : String(listError),
+          );
+        }
+      }
+
       if (!storedConversationId) {
-        setIsRestoring(false);
+        if (!cancelled) {
+          setIsRestoring(false);
+        }
         return;
       }
 
@@ -119,12 +172,12 @@ export default function CourseChat({
           return;
         }
 
-        setConversationId(conversation.id);
-        setProvider(
-          conversation.provider === "gemini" ? "google-genai" : "deepseek",
-        );
-        setModel(conversation.model);
-        setMessages(conversation.messages.map(storedMessageToCourseUiMessage));
+        applyCourseConversation(conversation, {
+          setConversationId,
+          setProvider,
+          setModel,
+          setMessages,
+        });
         requestNumber.current = conversation.messages.length;
         setStatus(`已从 SQLite 恢复 ${conversation.messages.length} 条消息`);
       } catch (restoreError) {
@@ -151,6 +204,43 @@ export default function CourseChat({
       cancelled = true;
     };
   }, []);
+
+  /** 从历史列表切换到指定会话，并把它更新为浏览器最近会话。 */
+  async function selectConversation(id: string) {
+    if (isSending || isRestoring || id === conversationId) {
+      return;
+    }
+
+    setIsRestoring(true);
+    setError("");
+    setStandaloneQuestion("");
+    setStatus("正在切换历史会话…");
+
+    try {
+      const conversation = await fetchCourseConversation(id);
+      applyCourseConversation(conversation, {
+        setConversationId,
+        setProvider,
+        setModel,
+        setMessages,
+      });
+      requestNumber.current = conversation.messages.length;
+      window.localStorage.setItem(
+        COURSE_CONVERSATION_STORAGE_KEY,
+        conversation.id,
+      );
+      setStatus(`已加载 ${conversation.messages.length} 条历史消息`);
+    } catch (selectionError) {
+      setError(
+        selectionError instanceof Error
+          ? `切换会话失败：${selectionError.message}`
+          : String(selectionError),
+      );
+      setStatus("切换历史会话失败");
+    } finally {
+      setIsRestoring(false);
+    }
+  }
 
   /** 清空浏览器视图；下一次发送时服务端会创建一个新的 SQLite 会话。 */
   function startNewConversation() {
@@ -219,6 +309,9 @@ export default function CourseChat({
         })),
       );
       setStatus("回答已保存到 SQLite");
+      void fetchCourseConversations()
+        .then(setConversations)
+        .catch(() => undefined);
       return;
     }
 
@@ -282,10 +375,10 @@ export default function CourseChat({
     <main className={styles.page}>
       <section className={styles.lessonHeader}>
         <div>
-          <p className={styles.eyebrow}>LANGCHAIN · LC10</p>
-          <h1>可恢复的流式 RAG 会话</h1>
+          <p className={styles.eyebrow}>LANGCHAIN · LC11</p>
+          <h1>带来源快照的历史会话</h1>
           <p className={styles.intro}>
-            浏览器只记住会话 ID，刷新后从 SQLite 恢复模型配置和消息历史。
+            切换 SQLite 历史会话，并在刷新后恢复每条回答当时使用的来源。
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -297,6 +390,41 @@ export default function CourseChat({
           >
             新建课程会话
           </button>
+        </div>
+      </section>
+
+      <section className={styles.historyPanel}>
+        <div className={styles.historyHeader}>
+          <div>
+            <span>SQLite 历史会话</span>
+            <strong>{conversations.length} 个</strong>
+          </div>
+          <small>列表只加载摘要，点击后再请求完整消息</small>
+        </div>
+        <div className={styles.historyList}>
+          {conversations.length === 0 ? (
+            <p>完成第一轮问答后，这里会出现会话记录。</p>
+          ) : (
+            conversations.map((conversation) => (
+              <button
+                className={
+                  conversation.id === conversationId
+                    ? styles.historyItemActive
+                    : styles.historyItem
+                }
+                disabled={isSending || isRestoring}
+                key={conversation.id}
+                onClick={() => void selectConversation(conversation.id)}
+                type="button"
+              >
+                <strong>{conversation.title}</strong>
+                <span>
+                  {conversation.provider} · {conversation.model}
+                </span>
+                <small>{formatConversationTime(conversation.updatedAt)}</small>
+              </button>
+            ))
+          )}
         </div>
       </section>
 
