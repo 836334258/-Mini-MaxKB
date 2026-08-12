@@ -358,6 +358,52 @@ pairs are restored; an interrupted, unmatched row is excluded from model
 history. LC7 persists message text for memory teaching, while the existing Web
 RAG flow remains responsible for persistent scored source snapshots.
 
+### LangChain LC8: Next.js streaming RAG Route Handler
+
+LC8 exposes the persistent conversational Chain through an isolated Next.js
+Route Handler at `POST /api/langchain-course/chat`. It uses the Web
+`ReadableStream`, `Response`, and `TextEncoder` APIs to emit NDJSON events:
+
+```text
+conversation → status → rewrite → sources → delta... → done
+```
+
+The server caches the in-memory vector-store Promise by embedding configuration
+and source-file modification state. API keys are excluded from the cache key
+and response. A changed source file, model, or vector dimension rebuilds the
+index; repeated chat requests in the same server process reuse it.
+
+Run the offline stream/HTTP validation tests, then start Next.js:
+
+```bash
+pnpm test:langchain:lc8
+pnpm langchain:lc8
+pnpm dev
+```
+
+`pnpm langchain:lc8` directly executes and consumes the same Route Handler with
+the Web Request/Response APIs. It is useful for observing the stream before a
+browser client exists; `pnpm dev` verifies the actual HTTP endpoint.
+
+Continue the ID printed by the smoke command:
+
+```bash
+pnpm langchain:lc8 -- --conversation-id <printed-id> --question "为什么必须这样做？"
+```
+
+From another terminal, observe each NDJSON event without response buffering:
+
+```bash
+curl.exe -N -X POST http://localhost:3000/api/langchain-course/chat ^
+  -H "Content-Type: application/json" ^
+  -d "{\"message\":\"更换 Embedding 模型后需要做什么？\"}"
+```
+
+Send the returned conversation ID with a follow-up request to restore SQLite
+history. The route stores the user row before generation and the assistant row
+only after the stream finishes. An interrupted unmatched user row is ignored
+when conversation history is reconstructed.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

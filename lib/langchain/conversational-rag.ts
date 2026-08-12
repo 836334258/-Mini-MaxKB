@@ -35,6 +35,12 @@ export interface ConversationalRagModels {
   queryModel?: BaseChatModel;
 }
 
+export type ConversationalRagStreamEvent =
+  | { type: "rewrite"; standaloneQuestion: string }
+  | { type: "sources"; sources: CourseRagResult["sources"] }
+  | { type: "delta"; content: string }
+  | { type: "done"; result: ConversationalRagResult };
+
 const HISTORY_AWARE_QUERY_PROMPT = ChatPromptTemplate.fromMessages([
   [
     "system",
@@ -141,4 +147,78 @@ export function createConversationalRagChain(
       };
     },
   );
+}
+
+/**
+ * 流式运行对话式 RAG，并按“改写、来源、文本增量、完成”依次产出事件。
+ * Route Handler 可以直接把这些领域事件翻译成 NDJSON，而无需了解 Prompt。
+ */
+export async function* streamConversationalRag(
+  retriever: VectorStoreRetriever<MemoryVectorStore>,
+  models: ConversationalRagModels,
+  input: ConversationalRagInput,
+): AsyncGenerator<ConversationalRagStreamEvent> {
+  const question = input.question.trim();
+  if (!question) {
+    throw new Error("对话式 RAG 问题不能为空");
+  }
+
+  const queryModel = models.queryModel ?? models.answerModel;
+  const rewriteChain = HISTORY_AWARE_QUERY_PROMPT.pipe(queryModel).pipe(
+    new StringOutputParser(),
+  );
+  const answerChain = CONVERSATIONAL_ANSWER_PROMPT.pipe(
+    models.answerModel,
+  ).pipe(new StringOutputParser());
+  const chatHistory = conversationTurnsToMessages(input.history);
+  const rewrittenQuestion =
+    chatHistory.length > 0
+      ? (
+          await rewriteChain.invoke({
+            chatHistory,
+            question,
+          })
+        ).trim()
+      : question;
+  const standaloneQuestion = rewrittenQuestion || question;
+
+  yield { type: "rewrite", standaloneQuestion };
+
+  const sources = await invokeCourseRetriever(retriever, standaloneQuestion);
+  yield { type: "sources", sources };
+
+  if (sources.length === 0) {
+    const result = {
+      answer: EMPTY_CONTEXT_ANSWER,
+      sources,
+      standaloneQuestion,
+    };
+    yield { type: "delta", content: result.answer };
+    yield { type: "done", result };
+    return;
+  }
+
+  let answer = "";
+  const answerStream = await answerChain.stream({
+    chatHistory,
+    question,
+    context: formatDocumentsAsContext(sources),
+  });
+
+  for await (const content of answerStream) {
+    if (!content) {
+      continue;
+    }
+    answer += content;
+    yield { type: "delta", content };
+  }
+
+  yield {
+    type: "done",
+    result: {
+      answer: answer.trim(),
+      sources,
+      standaloneQuestion,
+    },
+  };
 }
