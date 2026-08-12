@@ -12,6 +12,10 @@ import {
 } from "../../../../lib/langchain/course-chat-stream";
 import { openCourseConversationRepository } from "../../../../lib/langchain/course-conversation-store";
 import { getCourseKnowledgeRuntime } from "../../../../lib/langchain/course-knowledge-runtime";
+import {
+  recordCourseRunSafely,
+  type CourseRunStage,
+} from "../../../../lib/langchain/course-observability";
 import { createCourseRetriever } from "../../../../lib/langchain/course-retriever";
 import {
   configureCourseModelAuthentication,
@@ -103,6 +107,34 @@ export async function POST(request: Request) {
     );
   }
 
+  const requestStartedAt = performance.now();
+  let runRecorded = false;
+  let runConversationId = body.conversationId?.trim() || undefined;
+  let runProvider = body.provider?.trim() || "unknown";
+  let runModel = body.model?.trim() || "unknown";
+
+  /** 每个请求只追加一条终态指标，避免成功和异常路径重复记录。 */
+  function recordTerminalRun(input: {
+    status: "success" | "error";
+    sourceCount: number;
+    retrievalMs: number;
+    generationMs: number;
+    errorStage?: CourseRunStage;
+    errorMessage?: string;
+  }) {
+    if (runRecorded) {
+      return;
+    }
+    runRecorded = true;
+    recordCourseRunSafely({
+      conversationId: runConversationId,
+      provider: runProvider,
+      model: runModel,
+      totalMs: performance.now() - requestStartedAt,
+      ...input,
+    });
+  }
+
   configureAiNetworkFromEnv();
   const repository = openCourseConversationRepository();
 
@@ -112,6 +144,14 @@ export async function POST(request: Request) {
       : undefined;
 
     if (body.conversationId?.trim() && !existingConversation) {
+      recordTerminalRun({
+        status: "error",
+        sourceCount: 0,
+        retrievalMs: 0,
+        generationMs: 0,
+        errorStage: "configuration",
+        errorMessage: "会话不存在",
+      });
       repository.close();
       return Response.json({ error: "会话不存在" }, { status: 404 });
     }
@@ -121,6 +161,8 @@ export async function POST(request: Request) {
       existingConversation?.provider,
       existingConversation?.model,
     );
+    runProvider = modelConfig.modelProvider;
+    runModel = modelConfig.model;
     configureCourseModelAuthentication(modelConfig);
     const history: CourseConversationTurn[] = existingConversation
       ? storedMessagesToConversationTurns(existingConversation.messages)
@@ -133,6 +175,7 @@ export async function POST(request: Request) {
         model: modelConfig.model,
         knowledgeBaseId: "langchain-course",
       });
+    runConversationId = conversation.id;
 
     repository.addMessage({
       conversationId: conversation.id,
@@ -142,6 +185,11 @@ export async function POST(request: Request) {
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
+        let stage: CourseRunStage = "knowledge";
+        let retrievalStartedAt = 0;
+        let sourcesReceivedAt = 0;
+        let sourceCount = 0;
+
         try {
           enqueueEvent(controller, { type: "conversation", conversation });
           enqueueEvent(controller, {
@@ -159,6 +207,8 @@ export async function POST(request: Request) {
             { k: 2 },
           );
           const chatModel = await createCourseChatModel(modelConfig);
+          stage = "retrieval";
+          retrievalStartedAt = performance.now();
 
           for await (const event of streamConversationalRag(
             retriever,
@@ -168,6 +218,9 @@ export async function POST(request: Request) {
             if (event.type === "rewrite") {
               enqueueEvent(controller, event);
             } else if (event.type === "sources") {
+              sourcesReceivedAt = performance.now();
+              sourceCount = event.sources.length;
+              stage = "generation";
               enqueueEvent(controller, {
                 type: "sources",
                 sources: toCourseStreamSources(event.sources),
@@ -175,6 +228,8 @@ export async function POST(request: Request) {
             } else if (event.type === "delta") {
               enqueueEvent(controller, event);
             } else {
+              const generationFinishedAt = performance.now();
+              stage = "persistence";
               const sourceSnapshots = toCourseStreamSources(
                 event.result.sources,
               );
@@ -184,6 +239,18 @@ export async function POST(request: Request) {
                 content: event.result.answer,
                 sources: toStoredCourseSources(sourceSnapshots),
               });
+              recordTerminalRun({
+                status: "success",
+                sourceCount,
+                retrievalMs:
+                  sourcesReceivedAt > 0 && retrievalStartedAt > 0
+                    ? sourcesReceivedAt - retrievalStartedAt
+                    : 0,
+                generationMs:
+                  sourcesReceivedAt > 0
+                    ? generationFinishedAt - sourcesReceivedAt
+                    : 0,
+              });
               enqueueEvent(controller, {
                 type: "done",
                 message: assistantMessage,
@@ -191,9 +258,23 @@ export async function POST(request: Request) {
             }
           }
         } catch (error) {
+          const failedAt = performance.now();
+          const message = error instanceof Error ? error.message : String(error);
+          recordTerminalRun({
+            status: "error",
+            sourceCount,
+            retrievalMs:
+              retrievalStartedAt > 0
+                ? (sourcesReceivedAt || failedAt) - retrievalStartedAt
+                : 0,
+            generationMs:
+              sourcesReceivedAt > 0 ? failedAt - sourcesReceivedAt : 0,
+            errorStage: stage,
+            errorMessage: message,
+          });
           enqueueEvent(controller, {
             type: "error",
-            message: error instanceof Error ? error.message : String(error),
+            message,
           });
         } finally {
           repository.close();
@@ -212,6 +293,14 @@ export async function POST(request: Request) {
   } catch (error) {
     repository.close();
     const message = error instanceof Error ? error.message : String(error);
+    recordTerminalRun({
+      status: "error",
+      sourceCount: 0,
+      retrievalMs: 0,
+      generationMs: 0,
+      errorStage: "configuration",
+      errorMessage: message,
+    });
     return Response.json({ error: message }, { status: 400 });
   }
 }

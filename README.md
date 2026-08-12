@@ -507,6 +507,55 @@ Run the list/detail/source persistence tests with:
 pnpm test:langchain:lc11
 ```
 
+### LangChain LC12: retrieval evaluation and local observability
+
+LC12 closes the course with two feedback loops. Offline evaluation uses the
+fixed `data/lc12-course-evaluation.json` dataset and the real configured
+Embedding model, but does not call a chat model. Positive cases measure Hit@K
+and mean reciprocal rank (MRR); cases with an empty `expectedSources` list
+measure out-of-domain rejection accuracy.
+
+```bash
+pnpm langchain:lc12
+pnpm langchain:lc12 -- --k 2 --min-score 0.6
+pnpm test:langchain:lc12
+```
+
+Do not tune a threshold from one demo question. Add representative business
+questions and expected source filenames, keep a stable baseline, then compare
+one chunking/model/threshold change at a time.
+
+Online observability writes one terminal row per valid chat request to the same
+course SQLite database. It does not duplicate question text, prompts, or API
+keys. Each row records provider/model, source count, retrieval time (including
+history-aware query rewriting), generation time, total time, success/error,
+and the failure stage. The Web page reads a local summary from
+`GET /api/langchain-course/observability` and shows success/error counts,
+average retrieval/generation latency, P95 total latency, and the latest error.
+
+The completed course architecture is:
+
+```text
+Next.js Client Component
+  -> NDJSON Route Handler
+  -> SQLite conversation memory + source snapshots
+  -> history-aware query rewrite
+  -> Retriever -> MemoryVectorStore -> replaceable Embedding provider
+  -> grounded prompt -> replaceable Gemini/DeepSeek ChatModel
+  -> streaming answer
+  -> local run metrics
+
+fixed evaluation dataset
+  -> the same VectorStore
+  -> Hit@K / MRR / rejection accuracy
+```
+
+Local metrics are intentionally small and inspectable. For production tracing
+across Runnable/model calls, LangChain can also send traces to LangSmith when
+the commented server-side `LANGSMITH_*` variables in `.env.example` are
+configured. That external service is optional and is not required for this
+course or its local dashboard.
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

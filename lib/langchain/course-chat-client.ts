@@ -3,6 +3,10 @@ import type {
   ConversationSummary,
 } from "../conversations/types";
 import type { CourseChatStreamEvent } from "./course-chat-stream";
+import type {
+  CourseRunRecord,
+  CourseRunSummary,
+} from "./course-observability";
 
 /** 从非 2xx 响应中尽量提取服务端返回的错误说明。 */
 async function readResponseError(response: Response) {
@@ -69,6 +73,26 @@ export async function fetchCourseConversations(
   }
 
   return body.conversations;
+}
+
+export interface CourseObservabilityPayload {
+  summary: CourseRunSummary;
+  recentRuns: CourseRunRecord[];
+}
+
+/** 获取本地课程链路的聚合耗时和最近运行终态。 */
+export async function fetchCourseObservability(
+  fetcher: typeof fetch = fetch,
+) {
+  const response = await fetcher("/api/langchain-course/observability", {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await readResponseError(response));
+  }
+
+  return (await response.json()) as CourseObservabilityPayload;
 }
 
 /**

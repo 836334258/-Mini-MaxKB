@@ -12,6 +12,8 @@ import {
   consumeCourseChatStream,
   fetchCourseConversation,
   fetchCourseConversations,
+  fetchCourseObservability,
+  type CourseObservabilityPayload,
 } from "../../lib/langchain/course-chat-client";
 import type {
   CourseChatStreamEvent,
@@ -125,6 +127,8 @@ export default function CourseChat({
   const [provider, setProvider] = useState<CourseModelProvider>(defaultProvider);
   const [model, setModel] = useState(defaultModel);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [observability, setObservability] =
+    useState<CourseObservabilityPayload>();
   const [messages, setMessages] = useState<CourseUiMessage[]>([]);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("准备就绪");
@@ -155,6 +159,15 @@ export default function CourseChat({
               : String(listError),
           );
         }
+      }
+
+      try {
+        const metrics = await fetchCourseObservability();
+        if (!cancelled) {
+          setObservability(metrics);
+        }
+      } catch {
+        // 观测面板失败不阻止恢复聊天，这是非核心辅助信息。
       }
 
       if (!storedConversationId) {
@@ -309,9 +322,10 @@ export default function CourseChat({
         })),
       );
       setStatus("回答已保存到 SQLite");
-      void fetchCourseConversations()
-        .then(setConversations)
-        .catch(() => undefined);
+      void Promise.all([
+        fetchCourseConversations().then(setConversations),
+        fetchCourseObservability().then(setObservability),
+      ]).catch(() => undefined);
       return;
     }
 
@@ -375,10 +389,10 @@ export default function CourseChat({
     <main className={styles.page}>
       <section className={styles.lessonHeader}>
         <div>
-          <p className={styles.eyebrow}>LANGCHAIN · LC11</p>
-          <h1>带来源快照的历史会话</h1>
+          <p className={styles.eyebrow}>LANGCHAIN · LC12</p>
+          <h1>可评估、可观测的 Mini‑MaxKB</h1>
           <p className={styles.intro}>
-            切换 SQLite 历史会话，并在刷新后恢复每条回答当时使用的来源。
+            固定数据集衡量检索质量，用本地运行指标定位慢请求和错误阶段。
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -500,6 +514,47 @@ export default function CourseChat({
           <span>历史改写结果</span>
           <strong>{standaloneQuestion || "首轮问题无需改写"}</strong>
         </div>
+      </section>
+
+      <section className={styles.observabilityPanel}>
+        <div className={styles.observabilityHeader}>
+          <div>
+            <span>LC12 本地可观测性</span>
+            <strong>最近 100 次请求汇总</strong>
+          </div>
+          <small>不记录问题正文、Prompt 或 API Key</small>
+        </div>
+        <div className={styles.metricGrid}>
+          <div>
+            <span>成功 / 错误</span>
+            <strong>
+              {observability?.summary.successRuns ?? 0} / {observability?.summary.errorRuns ?? 0}
+            </strong>
+          </div>
+          <div>
+            <span>平均检索</span>
+            <strong>{observability?.summary.averageRetrievalMs ?? 0} ms</strong>
+          </div>
+          <div>
+            <span>平均生成</span>
+            <strong>{observability?.summary.averageGenerationMs ?? 0} ms</strong>
+          </div>
+          <div>
+            <span>P95 总耗时</span>
+            <strong>{observability?.summary.p95TotalMs ?? 0} ms</strong>
+          </div>
+        </div>
+        {observability?.recentRuns.find((run) => run.status === "error") && (
+          <div className={styles.lastError}>
+            <span>最近错误</span>
+            <strong>
+              {observability.recentRuns.find((run) => run.status === "error")?.errorStage}
+            </strong>
+            <small>
+              {observability.recentRuns.find((run) => run.status === "error")?.errorMessage}
+            </small>
+          </div>
+        )}
       </section>
 
       {error && <div className={styles.error}>{error}</div>}

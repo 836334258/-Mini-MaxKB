@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   consumeCourseChatStream,
   fetchCourseConversations,
+  fetchCourseObservability,
 } from "../../lib/langchain/course-chat-client";
 import type { CourseChatStreamEvent } from "../../lib/langchain/course-chat-stream";
 
@@ -87,4 +88,23 @@ test("LC11 客户端读取轻量会话摘要列表", async () => {
       cache: "no-store",
     },
   ]);
+});
+
+test("LC12 客户端使用 no-store 读取本地观测汇总", async () => {
+  const summary = {
+    totalRuns: 1,
+    successRuns: 1,
+    errorRuns: 0,
+    averageRetrievalMs: 100,
+    averageGenerationMs: 500,
+    averageTotalMs: 650,
+    p95TotalMs: 650,
+  };
+  const payload = await fetchCourseObservability(async (input, init) => {
+    assert.equal(input, "/api/langchain-course/observability");
+    assert.equal(init?.cache, "no-store");
+    return Response.json({ summary, recentRuns: [] });
+  });
+
+  assert.deepEqual(payload, { summary, recentRuns: [] });
 });

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "embedding-reindex",
+    "query": "更换 Embedding 模型以后为什么要重新建立索引？",
+    "expectedSources": ["data/l1-documents/model-management.md"]
+  },
+  {
+    "id": "api-key-security",
+    "query": "为什么不能把 API Key 放进浏览器端代码？",
+    "expectedSources": ["data/l1-documents/security.md"]
+  },
+  {
+    "id": "learning-path",
+    "query": "完成语义搜索以后，下一步应该学习什么？",
+    "expectedSources": ["data/l1-documents/learning-path.md"]
+  },
+  {
+    "id": "weather-rejection",
+    "query": "明天上海会不会下雨？",
+    "expectedSources": []
+  },
+  {
+    "id": "cooking-rejection",
+    "query": "红烧肉应该放多少糖？",
+    "expectedSources": []
+  }
+]

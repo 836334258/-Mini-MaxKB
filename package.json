@@ -49,7 +49,9 @@
     "test:langchain:lc8": "tsx --test tests/langchain/conversational-rag-stream.test.ts tests/langchain/course-chat-route.test.ts",
     "test:langchain:lc9": "tsx --test tests/langchain/course-chat-client.test.ts",
     "test:langchain:lc10": "tsx --test tests/langchain/course-conversation-route.test.ts",
-    "test:langchain:lc11": "tsx --test tests/langchain/course-conversation-route.test.ts tests/langchain/course-chat-client.test.ts"
+    "test:langchain:lc11": "tsx --test tests/langchain/course-conversation-route.test.ts tests/langchain/course-chat-client.test.ts",
+    "langchain:lc12": "tsx scripts/lc12-evaluate.ts",
+    "test:langchain:lc12": "tsx --test tests/langchain/course-evaluation.test.ts tests/langchain/course-observability.test.ts tests/langchain/course-chat-client.test.ts"
   },
   "dependencies": {
     "@langchain/classic": "1.0.41",
