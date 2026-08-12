@@ -47,7 +47,8 @@
     "test:langchain:lc7": "tsx --test tests/langchain/persistent-conversation.test.ts",
     "langchain:lc8": "tsx scripts/lc8-route-smoke.ts",
     "test:langchain:lc8": "tsx --test tests/langchain/conversational-rag-stream.test.ts tests/langchain/course-chat-route.test.ts",
-    "test:langchain:lc9": "tsx --test tests/langchain/course-chat-client.test.ts"
+    "test:langchain:lc9": "tsx --test tests/langchain/course-chat-client.test.ts",
+    "test:langchain:lc10": "tsx --test tests/langchain/course-conversation-route.test.ts"
   },
   "dependencies": {
     "@langchain/classic": "1.0.41",

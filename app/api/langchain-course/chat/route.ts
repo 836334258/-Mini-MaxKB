@@ -1,6 +1,5 @@
 import { configureAiNetworkFromEnv } from "../../../../lib/ai/network";
 import type { ChatProviderId } from "../../../../lib/ai/types";
-import { ConversationRepository } from "../../../../lib/db/conversation-repository";
 import {
   streamConversationalRag,
   type CourseConversationTurn,
@@ -10,6 +9,7 @@ import {
   toCourseStreamSources,
   type CourseChatStreamEvent,
 } from "../../../../lib/langchain/course-chat-stream";
+import { openCourseConversationRepository } from "../../../../lib/langchain/course-conversation-store";
 import { getCourseKnowledgeRuntime } from "../../../../lib/langchain/course-knowledge-runtime";
 import { createCourseRetriever } from "../../../../lib/langchain/course-retriever";
 import {
@@ -103,10 +103,7 @@ export async function POST(request: Request) {
   }
 
   configureAiNetworkFromEnv();
-  const repository = new ConversationRepository(
-    process.env.LANGCHAIN_COURSE_DATABASE_PATH?.trim() ||
-      ".mini-maxkb/lc7-course.sqlite",
-  );
+  const repository = openCourseConversationRepository();
 
   try {
     const existingConversation = body.conversationId?.trim()

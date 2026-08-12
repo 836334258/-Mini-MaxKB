@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { consumeCourseChatStream } from "../../lib/langchain/course-chat-client";
+import type { StoredMessage } from "../../lib/conversations/types";
+import {
+  consumeCourseChatStream,
+  fetchCourseConversation,
+} from "../../lib/langchain/course-chat-client";
 import type {
   CourseChatStreamEvent,
   CourseStreamSource,
@@ -21,6 +25,27 @@ interface CourseUiMessage {
   role: "user" | "assistant";
   content: string;
   sources: CourseStreamSource[];
+}
+
+const COURSE_CONVERSATION_STORAGE_KEY =
+  "mini-maxkb.langchain-course.conversation-id";
+
+/** 把 SQLite 通用消息结构转换成本课程页面需要的来源结构。 */
+function storedMessageToCourseUiMessage(
+  message: StoredMessage,
+): CourseUiMessage {
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    sources: message.sources.map((source) => ({
+      id: source.id,
+      source: source.source,
+      title: source.title,
+      chunkIndex: source.position,
+      content: source.content,
+    })),
+  };
 }
 
 /** 更新指定消息；使用函数式 setState 可以安全处理连续到达的 delta。 */
@@ -70,13 +95,69 @@ export default function CourseChat({
   const [standaloneQuestion, setStandaloneQuestion] = useState("");
   const [error, setError] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(true);
   const requestNumber = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const storedConversationId = window.localStorage
+      .getItem(COURSE_CONVERSATION_STORAGE_KEY)
+      ?.trim();
+
+    /** 从服务端恢复上次会话，并防止组件卸载后继续修改状态。 */
+    async function restoreConversation() {
+      if (!storedConversationId) {
+        setIsRestoring(false);
+        return;
+      }
+
+      setStatus("正在从 SQLite 恢复上次会话…");
+
+      try {
+        const conversation = await fetchCourseConversation(storedConversationId);
+        if (cancelled) {
+          return;
+        }
+
+        setConversationId(conversation.id);
+        setProvider(
+          conversation.provider === "gemini" ? "google-genai" : "deepseek",
+        );
+        setModel(conversation.model);
+        setMessages(conversation.messages.map(storedMessageToCourseUiMessage));
+        requestNumber.current = conversation.messages.length;
+        setStatus(`已从 SQLite 恢复 ${conversation.messages.length} 条消息`);
+      } catch (restoreError) {
+        if (cancelled) {
+          return;
+        }
+
+        window.localStorage.removeItem(COURSE_CONVERSATION_STORAGE_KEY);
+        setError(
+          restoreError instanceof Error
+            ? `恢复上次会话失败：${restoreError.message}`
+            : String(restoreError),
+        );
+        setStatus("上次会话无法恢复，已切换到新会话");
+      } finally {
+        if (!cancelled) {
+          setIsRestoring(false);
+        }
+      }
+    }
+
+    void restoreConversation();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /** 清空浏览器视图；下一次发送时服务端会创建一个新的 SQLite 会话。 */
   function startNewConversation() {
-    if (isSending) {
+    if (isSending || isRestoring) {
       return;
     }
+    window.localStorage.removeItem(COURSE_CONVERSATION_STORAGE_KEY);
     setConversationId(undefined);
     setMessages([]);
     setStandaloneQuestion("");
@@ -97,6 +178,10 @@ export default function CourseChat({
   ) {
     if (event.type === "conversation") {
       setConversationId(event.conversation.id);
+      window.localStorage.setItem(
+        COURSE_CONVERSATION_STORAGE_KEY,
+        event.conversation.id,
+      );
       return;
     }
     if (event.type === "status") {
@@ -144,7 +229,7 @@ export default function CourseChat({
   async function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const question = input.trim();
-    if (!question || isSending) {
+    if (!question || isSending || isRestoring) {
       return;
     }
 
@@ -197,15 +282,19 @@ export default function CourseChat({
     <main className={styles.page}>
       <section className={styles.lessonHeader}>
         <div>
-          <p className={styles.eyebrow}>LANGCHAIN · LC9</p>
-          <h1>浏览器流式 RAG 客户端</h1>
+          <p className={styles.eyebrow}>LANGCHAIN · LC10</p>
+          <h1>可恢复的流式 RAG 会话</h1>
           <p className={styles.intro}>
-            观察同一个请求如何依次经历会话创建、问题改写、向量检索和模型流式输出。
+            浏览器只记住会话 ID，刷新后从 SQLite 恢复模型配置和消息历史。
           </p>
         </div>
         <div className={styles.headerActions}>
           <Link href="/">返回 Mini-MaxKB</Link>
-          <button disabled={isSending} onClick={startNewConversation} type="button">
+          <button
+            disabled={isSending || isRestoring}
+            onClick={startNewConversation}
+            type="button"
+          >
             新建课程会话
           </button>
         </div>
@@ -215,7 +304,7 @@ export default function CourseChat({
         <label>
           <span>Provider</span>
           <select
-            disabled={Boolean(conversationId) || isSending}
+            disabled={Boolean(conversationId) || isSending || isRestoring}
             onChange={(event) => changeProvider(event.target.value as CourseModelProvider)}
             value={provider}
           >
@@ -226,7 +315,7 @@ export default function CourseChat({
         <label>
           <span>Model</span>
           <input
-            disabled={Boolean(conversationId) || isSending}
+            disabled={Boolean(conversationId) || isSending || isRestoring}
             onChange={(event) => setModel(event.target.value)}
             value={model}
           />
@@ -238,7 +327,12 @@ export default function CourseChat({
       </section>
 
       <section aria-live="polite" className={styles.chatPanel}>
-        {messages.length === 0 ? (
+        {isRestoring ? (
+          <div className={styles.emptyState}>
+            <strong>正在恢复上次课程会话…</strong>
+            <p>localStorage 提供 conversationId，消息正文从服务端 SQLite 读取。</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className={styles.emptyState}>
             <strong>试着问：</strong>
             <button
@@ -285,7 +379,7 @@ export default function CourseChat({
       <form className={styles.composer} onSubmit={submitQuestion}>
         <textarea
           aria-label="课程问题"
-          disabled={isSending}
+          disabled={isSending || isRestoring}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
@@ -297,8 +391,11 @@ export default function CourseChat({
           rows={3}
           value={input}
         />
-        <button disabled={!input.trim() || isSending} type="submit">
-          {isSending ? "生成中…" : "发送"}
+        <button
+          disabled={!input.trim() || isSending || isRestoring}
+          type="submit"
+        >
+          {isRestoring ? "恢复中…" : isSending ? "生成中…" : "发送"}
         </button>
       </form>
     </main>

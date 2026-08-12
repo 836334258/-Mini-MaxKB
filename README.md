@@ -450,6 +450,36 @@ Run the byte-boundary and HTTP-error client tests with:
 pnpm test:langchain:lc9
 ```
 
+### LangChain LC10: restore browser sessions from SQLite
+
+LC10 makes the course page survive a browser refresh. The browser stores only
+the latest `conversationId` under a namespaced `localStorage` key; messages and
+model settings remain authoritative in the course SQLite database.
+
+On mount, the Client Component follows this sequence:
+
+```text
+read conversationId from localStorage
+  -> GET /api/langchain-course/conversations/:id
+  -> read the matching SQLite conversation
+  -> restore provider, model, and messages
+```
+
+If the stored ID no longer exists, the browser removes that stale ID and falls
+back to a new conversation. “New course conversation” clears the browser
+pointer but deliberately does not delete the SQLite record. After the first
+stream emits its `conversation` event, the new ID becomes the browser's latest
+pointer.
+
+Test it manually by completing one answer at
+[http://localhost:3000/langchain-course](http://localhost:3000/langchain-course),
+refreshing the page, and then asking a short follow-up. Run the isolated Route
+Handler persistence test with:
+
+```bash
+pnpm test:langchain:lc10
+```
+
 ### L0: replaceable chat models
 
 L0 keeps the UI unchanged and introduces a small provider layer inspired by

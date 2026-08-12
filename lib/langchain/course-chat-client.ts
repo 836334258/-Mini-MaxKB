@@ -1,3 +1,4 @@
+import type { ConversationDetail } from "../conversations/types";
 import type { CourseChatStreamEvent } from "./course-chat-stream";
 
 /** 从非 2xx 响应中尽量提取服务端返回的错误说明。 */
@@ -14,6 +15,35 @@ async function readResponseError(response: Response) {
   }
 
   return text.trim() || `请求失败：HTTP ${response.status}`;
+}
+
+/** 根据会话 ID 从 SQLite 对应的服务端接口恢复完整课程会话。 */
+export async function fetchCourseConversation(
+  conversationId: string,
+  fetcher: typeof fetch = fetch,
+) {
+  const normalizedId = conversationId.trim();
+  if (!normalizedId) {
+    throw new Error("conversationId 不能为空");
+  }
+
+  const response = await fetcher(
+    `/api/langchain-course/conversations/${encodeURIComponent(normalizedId)}`,
+    { cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    throw new Error(await readResponseError(response));
+  }
+
+  const body = (await response.json()) as {
+    conversation?: ConversationDetail;
+  };
+  if (!body.conversation) {
+    throw new Error("服务端没有返回会话数据");
+  }
+
+  return body.conversation;
 }
 
 /**
