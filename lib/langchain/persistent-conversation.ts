@@ -13,7 +13,7 @@ export function toStoredChatProvider(
   return provider === "google-genai" ? "gemini" : provider;
 }
 
-/** 把数据库中的 provider 名称恢复成 initChatModel 使用的名称。 */
+/** 把数据库中的 provider 名称恢复成课程模型工厂使用的名称。 */
 export function toCourseModelProvider(
   provider: ChatProviderId,
 ): CourseModelProvider {

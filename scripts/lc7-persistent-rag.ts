@@ -154,7 +154,7 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);、
+  const message = error instanceof Error ? error.message : String(error);
   console.error(`LC7 运行失败：${message}`);
   process.exitCode = 1;
 });

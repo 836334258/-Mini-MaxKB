@@ -3,7 +3,8 @@ import test from "node:test";
 
 import {
   configureCourseModelAuthentication,
-  createInitChatModelOptions,
+  createCourseChatModel,
+  createCourseChatModelOptions,
   readCourseModelConfig,
 } from "../../lib/langchain/model-config";
 
@@ -52,16 +53,48 @@ test("LC1B 拒绝无效 provider 和越界模型参数", () => {
   );
 });
 
-test("LC1B 把课程配置准确映射给 initChatModel", () => {
+test("LC1B 把课程配置准确映射成供应商共用参数", () => {
   const config = readCourseModelConfig({});
 
-  assert.deepEqual(createInitChatModelOptions(config), {
-    modelProvider: "google-genai",
+  assert.deepEqual(createCourseChatModelOptions(config), {
+    model: "gemini-3.5-flash",
     temperature: 0.2,
     timeout: 120_000,
-    maxTokens: 2_048,
     maxRetries: 2,
   });
+});
+
+test("LC1B 模型工厂通过显式分支创建 Gemini 和 DeepSeek", () => {
+  const originalGoogleApiKey = process.env.GOOGLE_API_KEY;
+  const originalDeepSeekApiKey = process.env.DEEPSEEK_API_KEY;
+
+  // 构造器只检查配置是否存在；离线测试不会拿占位值发起网络请求。
+  process.env.GOOGLE_API_KEY = "offline-google-test-key";
+  process.env.DEEPSEEK_API_KEY = "offline-deepseek-test-key";
+
+  try {
+    const gemini = createCourseChatModel(readCourseModelConfig({}));
+    const deepseek = createCourseChatModel(
+      readCourseModelConfig({
+        LANGCHAIN_MODEL_PROVIDER: "deepseek",
+        LANGCHAIN_MODEL: "deepseek-chat",
+      }),
+    );
+
+    assert.equal(gemini.constructor.name, "ChatGoogleGenerativeAI");
+    assert.equal(deepseek.constructor.name, "ChatDeepSeek");
+  } finally {
+    if (originalGoogleApiKey === undefined) {
+      delete process.env.GOOGLE_API_KEY;
+    } else {
+      process.env.GOOGLE_API_KEY = originalGoogleApiKey;
+    }
+    if (originalDeepSeekApiKey === undefined) {
+      delete process.env.DEEPSEEK_API_KEY;
+    } else {
+      process.env.DEEPSEEK_API_KEY = originalDeepSeekApiKey;
+    }
+  }
 });
 
 test("LC1B 认证检查不会把 API Key 放进模型配置", () => {

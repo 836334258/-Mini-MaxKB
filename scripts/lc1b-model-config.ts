@@ -21,7 +21,7 @@ function readQuestion() {
 }
 
 /**
- * 运行 LC1B：先用 initChatModel 创建模型对象，再把模型对象交给研究 Agent。
+ * 运行 LC1B：先用可替换模型工厂创建对象，再把模型对象交给研究 Agent。
  */
 async function main() {
   loadEnvConfig(process.cwd());
@@ -33,7 +33,7 @@ async function main() {
   const agent = createResearchAgent(model);
   const question = readQuestion();
 
-  console.log("LC1B initChatModel 模型配置：");
+  console.log("LC1B 可替换模型工厂配置：");
   console.table(modelConfig);
   console.log(`用户问题：${question}\n`);
 

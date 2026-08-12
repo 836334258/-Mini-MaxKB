@@ -1,0 +1,317 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 85% 8%, rgba(48, 109, 255, 0.12), transparent 28rem),
+    #f4f6fa;
+  color: #172033;
+  padding: 42px max(24px, calc((100vw - 1040px) / 2)) 56px;
+}
+
+.lessonHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  color: #3267e3;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin: 0 0 10px;
+}
+
+.lessonHeader h1 {
+  font-size: clamp(30px, 5vw, 48px);
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.intro {
+  color: #637087;
+  line-height: 1.7;
+  margin: 12px 0 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+}
+
+.headerActions a,
+.headerActions button,
+.emptyState button {
+  border: 1px solid #d8deea;
+  border-radius: 10px;
+  background: #fff;
+  color: #284b9d;
+  cursor: pointer;
+  font: inherit;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.headerActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.runtimePanel {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1.8fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.runtimePanel label,
+.runtimeState {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dce2ed;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 14px 16px;
+}
+
+.runtimePanel span,
+.tracePanel span {
+  color: #7b879b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.runtimePanel input,
+.runtimePanel select {
+  background: transparent;
+  border: 0;
+  color: #172033;
+  font: inherit;
+  font-weight: 650;
+  min-width: 0;
+  outline: 0;
+}
+
+.runtimeState code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatPanel {
+  background: #fff;
+  border: 1px solid #dce2ed;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(34, 52, 89, 0.08);
+  min-height: 390px;
+  overflow: hidden;
+}
+
+.emptyState {
+  align-items: center;
+  color: #6d788c;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+  min-height: 390px;
+  padding: 32px;
+  text-align: center;
+}
+
+.emptyState button {
+  background: #edf3ff;
+  border-color: #cedcff;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px;
+}
+
+.userMessage,
+.assistantMessage {
+  display: grid;
+  gap: 10px;
+  max-width: 88%;
+}
+
+.userMessage {
+  align-self: flex-end;
+}
+
+.assistantMessage {
+  align-self: flex-start;
+}
+
+.messageRole {
+  color: #718096;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.userMessage .messageRole {
+  text-align: right;
+}
+
+.messageContent {
+  background: #f0f3f8;
+  border-radius: 6px 16px 16px;
+  line-height: 1.75;
+  padding: 14px 17px;
+  white-space: pre-wrap;
+}
+
+.userMessage .messageContent {
+  background: #3267e3;
+  border-radius: 16px 6px 16px 16px;
+  color: #fff;
+}
+
+.cursor::after {
+  animation: blink 0.8s steps(2, start) infinite;
+  content: "…";
+}
+
+.sources {
+  border-left: 3px solid #90acf0;
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+  padding-left: 12px;
+}
+
+.sourcesTitle {
+  color: #46639e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.source {
+  background: #f7f9fc;
+  border-radius: 9px;
+  padding: 9px 12px;
+}
+
+.source summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.source p {
+  color: #536078;
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 10px 0;
+  white-space: pre-wrap;
+}
+
+.source small {
+  color: #8490a5;
+}
+
+.tracePanel {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.tracePanel > div {
+  background: #e9eef8;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 15px;
+}
+
+.tracePanel strong {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.error {
+  background: #fff0f0;
+  border: 1px solid #f2b9b9;
+  border-radius: 10px;
+  color: #a52828;
+  margin-bottom: 12px;
+  padding: 11px 14px;
+}
+
+.composer {
+  background: #fff;
+  border: 1px solid #d4dcea;
+  border-radius: 16px;
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+}
+
+.composer:focus-within {
+  border-color: #7f9de6;
+  box-shadow: 0 0 0 3px rgba(50, 103, 227, 0.1);
+}
+
+.composer textarea {
+  border: 0;
+  flex: 1;
+  font: inherit;
+  line-height: 1.6;
+  outline: 0;
+  padding: 7px;
+  resize: vertical;
+}
+
+.composer button {
+  align-self: flex-end;
+  background: #3267e3;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  min-width: 92px;
+  padding: 12px 18px;
+}
+
+.composer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 24px 14px 36px;
+  }
+
+  .lessonHeader,
+  .headerActions {
+    flex-direction: column;
+  }
+
+  .runtimePanel,
+  .tracePanel {
+    grid-template-columns: 1fr;
+  }
+
+  .userMessage,
+  .assistantMessage {
+    max-width: 100%;
+  }
+}

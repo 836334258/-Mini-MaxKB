@@ -70,13 +70,19 @@ concept.
 ### LangChain LC1B: configurable model objects
 
 LC1B keeps the LC1A tools and system prompt unchanged, but initializes a chat
-model object with `initChatModel` before creating the Agent. The model and Agent
-therefore have separate responsibilities:
+model object with a small provider factory before creating the Agent. The model
+and Agent therefore have separate responsibilities:
 
-- `initChatModel` selects a provider and controls generation/network settings;
+- `createCourseChatModel` selects a provider and controls generation/network settings;
 - `createResearchAgent` owns the system prompt, tools, and agent loop;
 - provider API keys stay in server-side environment variables and are not part
   of the printable model configuration.
+
+The factory uses explicit `ChatGoogleGenerativeAI` and `ChatDeepSeek` imports.
+This keeps the replaceable-model boundary while allowing Next/Turbopack to see
+both possible server dependencies at build time; `initChatModel` uses a package
+name expression internally, which is suitable for the Node.js CLI lesson but
+cannot be statically bundled in this Route Handler.
 
 The default Gemini settings are intentionally conservative for grounded
 research answers:
@@ -403,6 +409,46 @@ Send the returned conversation ID with a follow-up request to restore SQLite
 history. The route stores the user row before generation and the assistant row
 only after the stream finishes. An interrupted unmatched user row is ignored
 when conversation history is reconstructed.
+
+### LangChain LC9: browser NDJSON streaming client
+
+LC9 adds an isolated Client Component at `/langchain-course` without replacing
+the existing Mini-MaxKB home page. The browser sends a question to the LC8
+Route Handler and uses `response.body.getReader()` plus `TextDecoder` to consume
+the NDJSON response incrementally.
+
+A network chunk is not a JSON event boundary: one JSON line may be split across
+multiple byte chunks, and several lines may arrive together. The client keeps a
+text buffer, parses only complete newline-delimited records, and translates each
+typed event into a focused UI update:
+
+```text
+conversation -> remember the SQLite conversation ID
+status       -> show the current server stage
+rewrite      -> show the standalone follow-up question
+sources      -> render the retrieved document chunks
+delta        -> append text to the assistant message
+done         -> replace the draft with the saved final message
+```
+
+Start the app and open the course page:
+
+```bash
+pnpm dev
+```
+
+Visit [http://localhost:3000/langchain-course](http://localhost:3000/langchain-course),
+ask one complete question, and then ask a short follow-up such as “为什么必须这样做？”.
+The same `conversationId` is sent on the second request, so LC8 can restore the
+SQLite history and emit a visible `rewrite` event. Provider and model controls
+are locked after the first message because each saved conversation pins its
+original model configuration.
+
+Run the byte-boundary and HTTP-error client tests with:
+
+```bash
+pnpm test:langchain:lc9
+```
 
 ### L0: replaceable chat models
 

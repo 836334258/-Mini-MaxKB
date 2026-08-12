@@ -1,4 +1,5 @@
-import { initChatModel } from "langchain";
+import { ChatDeepSeek } from "@langchain/deepseek";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { z } from "zod";
 
 export const COURSE_MODEL_PROVIDERS = [
@@ -119,18 +120,34 @@ export function configureCourseModelAuthentication(
   environment.GOOGLE_API_KEY = geminiApiKey;
 }
 
-/** 把课程字段翻译成 initChatModel 接受的标准模型参数。 */
-export function createInitChatModelOptions(config: CourseModelConfig) {
+/** 把课程配置转换成两个显式模型构造器共同使用的参数。 */
+export function createCourseChatModelOptions(config: CourseModelConfig) {
   return {
-    modelProvider: config.modelProvider,
+    model: config.model,
     temperature: config.temperature,
     timeout: config.timeoutMs,
-    maxTokens: config.maxTokens,
     maxRetries: config.maxRetries,
   };
 }
 
-/** 创建与具体供应商解耦的 LangChain ChatModel 对象。 */
-export async function createCourseChatModel(config: CourseModelConfig) {
-  return initChatModel(config.model, createInitChatModelOptions(config));
+/**
+ * 根据统一课程配置创建具体的 LangChain ChatModel。
+ *
+ * 这里使用静态导入和明确分支，让 Next/Turbopack 能在构建时确定依赖；
+ * provider 的差异仍被封装在工厂函数内，Agent 和 RAG Chain 不需要改变。
+ */
+export function createCourseChatModel(config: CourseModelConfig) {
+  const commonOptions = createCourseChatModelOptions(config);
+
+  if (config.modelProvider === "deepseek") {
+    return new ChatDeepSeek({
+      ...commonOptions,
+      maxTokens: config.maxTokens,
+    });
+  }
+
+  return new ChatGoogleGenerativeAI({
+    ...commonOptions,
+    maxOutputTokens: config.maxTokens,
+  });
 }
